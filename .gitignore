@@ -1,0 +1,21 @@
+# Unreal Engine specifics
+*/Intermediate
+*/Binaries
+*/Saved
+
+# Developers files
+*/Content/Developers
+*/Content/StarterContent
+*/Content/Collections
+
+# no need to store solution, it can be regenerated
+*.sln
+
+#visual studio files
+.vs
+
+# bat files for building
+*.bat
+
+#UE4 Engine
+*/UE4

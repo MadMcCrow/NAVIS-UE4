@@ -1,0 +1,20 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "4.23",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "NAVIS",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Modules": [
+		{
+			"Name": "NAVIS_Physics",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
