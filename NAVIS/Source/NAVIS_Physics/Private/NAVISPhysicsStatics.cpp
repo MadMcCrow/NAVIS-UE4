@@ -38,7 +38,7 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 					int32 I1 = Indices[PolyData.mIndexBase + (VertIdx - 1)];
 					int32 I2 = Indices[PolyData.mIndexBase + VertIdx];
 
-					// 
+					//
 					// We have to determine if our points are under our plane or not
 					auto IsUnderPlane = [PlaneRelativePosition, PlaneNormalSafe] ( const FVector &Position ) -> bool {
 						const FVector Orient = Position - PlaneRelativePosition;
@@ -66,8 +66,8 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 					// Case 1 : All points are below the plane :
 					if(I0UnderPlane && I1UnderPlane && I2UnderPlane)
 					{
-						Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
-															ScaleTransform.TransformPosition(V1), 
+						Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0),
+															ScaleTransform.TransformPosition(V1),
 															ScaleTransform.TransformPosition(V2));
 						continue;
 					}
@@ -85,7 +85,7 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 							return NSegment * S;
 					 	}
 
-						// we will always have two cuts 
+						// we will always have two cuts
 						FVector CutA, CutB;
 
 						// we call alpha a cut in (v0, v1) and (v0, v2) with 0 under, and neg-alpha when 0 is over
@@ -93,18 +93,18 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 						// we call gamma a cut in (v0, v2) and (v2, v1) with 2 under, and neg-gamma when 2 is over
 
 						enum ECutCase {alpha, beta, gamma, error};
-						
+
 						ECutCase CutCase = ECutCase::error;
 						if ((I0UnderPlane && (!I1UnderPlane && !I2UnderPlane)) || (I1UnderPlane && I2UnderPlane && !I0UnderPlane))
 							CutCase = ECutCase::alpha;
 						else
 						if ((I1UnderPlane && (!I0UnderPlane && !I2UnderPlane)) || (I0UnderPlane && I2UnderPlane && !I1UnderPlane))
 								CutCase = ECutCase::beta;
-						else 
+						else
 						if ((I2UnderPlane && (!I0UnderPlane && !I1UnderPlane)) || (I1UnderPlane && I0UnderPlane && !I2UnderPlane))
 							CutCase = ECutCase::gamma;
-						
-				
+
+
 						auto AddVertices = [AddedSegments, AddedVertices] ( const FVector &A, const FVector &B )
 						{
 							AddedSegments.Add({A, B});
@@ -118,22 +118,22 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 							{
 								CutA = Intersection(V0,V1);
 								CutB = Intersection(V0,V2);
-								if(I0UnderPlane) 
+								if(I0UnderPlane)
 								{
 									AddVertices(CutA, CutB);
-									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
-																		ScaleTransform.TransformPosition(CutA), 
+									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0),
+																		ScaleTransform.TransformPosition(CutA),
 																		ScaleTransform.TransformPosition(CutB));
 								}
 								else // neg alpha
 								{
 									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutB), 
-																		ScaleTransform.TransformPosition(CutA), 
+									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutB),
+																		ScaleTransform.TransformPosition(CutA),
 																		ScaleTransform.TransformPosition(V1));
 
-									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutB), 
-																		ScaleTransform.TransformPosition(V1), 
+									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutB),
+																		ScaleTransform.TransformPosition(V1),
 																		ScaleTransform.TransformPosition(V2));
 								}
 							}
@@ -146,19 +146,19 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 								if(I1UnderPlane)
 								{
 									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutA), 
-																		ScaleTransform.TransformPosition(V1), 
+									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutA),
+																		ScaleTransform.TransformPosition(V1),
 																		ScaleTransform.TransformPosition(CutB));
 								}
 								else // neg beta
 								{
 									AddVertices(CutA, CutB);
-									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
-																		ScaleTransform.TransformPosition(CutA), 
+									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0),
+																		ScaleTransform.TransformPosition(CutA),
 																		ScaleTransform.TransformPosition(V2));
 
-									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutA), 
-																		ScaleTransform.TransformPosition(CutB), 
+									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutA),
+																		ScaleTransform.TransformPosition(CutB),
 																		ScaleTransform.TransformPosition(V2));
 								}
 							}
@@ -171,19 +171,19 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 								if(I2UnderPlane)
 								{
 									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V2), 
-																		ScaleTransform.TransformPosition(CutB), 
+									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V2),
+																		ScaleTransform.TransformPosition(CutB),
 																		ScaleTransform.TransformPosition(CutA));
 								}
 								else // neg gamma
 								{
 									AddVertices(CutA, CutB);
-									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
-																		ScaleTransform.TransformPosition(V1), 
+									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0),
+																		ScaleTransform.TransformPosition(V1),
 																		ScaleTransform.TransformPosition(CutB));
 
-									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutB), 
-																		ScaleTransform.TransformPosition(V1), 
+									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutB),
+																		ScaleTransform.TransformPosition(V1),
 																		ScaleTransform.TransformPosition(CutA));
 								}
 							}
@@ -192,8 +192,8 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 						case ECutCase::error:
 							{
 								UE_LOG(LogNAVIS_Physics, Error, TEXT("wrong cut, not possible"));
-								Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
-																	ScaleTransform.TransformPosition(V1), 
+								Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0),
+																	ScaleTransform.TransformPosition(V1),
 																	ScaleTransform.TransformPosition(V2));
 								continue;
 							}
@@ -202,21 +202,21 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 
 						// this is all for the cutting part
 
-					} 
-					
+					}
+
 				} // end of for (int32 VertIdx = 2; VertIdx < PolyData.mNbVerts; ++ VertIdx)
 
 				// If we dont have any points next step makes no sens
 				if(!AddedVertices.IsValidIndex(0))
-					return Volume;	
+					return Volume;
 
 				// find iso-centroid
 				FVector centroid = FVector::ZeroVector;
 				for(auto point : AddedVertices)
 					centroid += point;
 				centroid /= AddedVertices.Num();
-				
-				auto Ref = AddedVertices[0]; 
+
+				auto Ref = AddedVertices[0];
 				//
 				// Sort Vertices by orientation, this is only possible because we're in a convex shape
 				AddedVertices.Sort([PlaneNormal, centroid, Ref](const FVector& A, const FVector& B)
@@ -240,31 +240,46 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 						break;
 					}
 				}
-				
+
 				if(invert)
 					Algo::Reverse(AddedVertices);
 
 				//
-				// Let's start making faces with the hole 
+				// Let's start making faces with the hole
 				TArray<FVector> Left, Right;
-				FVector PreviousSegment = AddedVertices[0];
-				// split the array in two and build 
+                // we want the first element in our tabs
+                Left.Add(AddedVertices[0]);
+                //Right.Add(AddedVertice[0]); // doing so will double the first triangle, and we dont want that
+				// split the array in two and build
 				for (int idx = 1; idx < FGenericPlatformMath::CeilToInt(AddedVertices.Num() /2.f) - 1 ; idx ++)
 				{
 					Left.Add(AddedVertices[idx]);
-					Right.Add(AddedVertices.Last(idx));
-					// this needs to be fixed
-					Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
-														ScaleTransform.TransformPosition(V1), 
-														ScaleTransform.TransformPosition(V2));
+					Right.Add(AddedVertices.Last(idx - 1)); // we want to start by the actual end
+
+                    // left[idx] is current Left
+                    // right[idx -1 ] is current right
+
+                    if(Left.IsValidIndex(idx-1))
+                    {
+                        Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Left[idx - 1]),
+														    ScaleTransform.TransformPosition(Left[idx]),
+														    ScaleTransform.TransformPosition(Right[idx - 1]));
+                    }
+					if(Right.IsValidIndex(idx-1))
+                    {
+                        Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Left[idx - 1]), // previous Left
+														    ScaleTransform.TransformPosition(Right[idx - 1]), // current right
+														    ScaleTransform.TransformPosition(Right[idx - 2])); // previous Right
+                    }
+
 				}
 
 
-				
+
 			}
 		}
 	}
-	return Volume;	
+	return Volume;
 }
 //#endif // WITH_PHYSX
 
@@ -274,7 +289,7 @@ float UNAVISPhysicsStatics::GetActorVolume(const AActor * in)
 	if(!in)
 		return 0.f;
 	return GetPrimitiveVolume( Cast<UPrimitiveComponent>(in->GetRootComponent()));
-} 
+}
 
 float UNAVISPhysicsStatics::GetPrimitiveVolume(const UPrimitiveComponent * in)
 {
