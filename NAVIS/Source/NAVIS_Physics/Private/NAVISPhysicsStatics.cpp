@@ -247,13 +247,19 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 				//
 				// Let's start making faces with the hole 
 				TArray<FVector> Left, Right;
-				// split the array in two :
-				for (int idx = 0; idx < FGenericPlatformMath::CeilToInt(AddedVertices.Num() /2.f) - 1 ; idx ++)
+				FVector PreviousSegment = AddedVertices[0];
+				// split the array in two and build 
+				for (int idx = 1; idx < FGenericPlatformMath::CeilToInt(AddedVertices.Num() /2.f) - 1 ; idx ++)
 				{
 					Left.Add(AddedVertices[idx]);
 					Right.Add(AddedVertices.Last(idx));
+					// this needs to be fixed
+					Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
+														ScaleTransform.TransformPosition(V1), 
+														ScaleTransform.TransformPosition(V2));
 				}
-				
+
+
 				
 			}
 		}
