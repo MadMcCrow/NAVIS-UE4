@@ -3,6 +3,9 @@
 #include "NAVISPhysicsStatics.h"
 #include "NAVIS_PhysicsPCH.h"
 
+ #include "Algo/Reverse.h"	// to reverse TArray
+ #include "GenericPlatform/GenericPlatformMath.h" // To ceil
+
 
 #if WITH_PHYSX
 float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* ConvexMesh,  const FVector &PlaneRelativePosition, const FVector &PlaneNormal );
@@ -20,8 +23,9 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 
 		const PxVec3* Vertices = ConvexMesh->getVertices();
 		const PxU8* Indices = ConvexMesh->getIndexBuffer();
-
+		TTuple
 		TArray<FVector> AddedVertices;
+		TArray<TPair<FVector,FVector>> AddedSegments;
 
 		for (int32 PolyIdx = 0; PolyIdx < NumPolys; ++PolyIdx)
 		{
@@ -101,6 +105,12 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 							CutCase = ECutCase::gamma;
 						
 				
+						auto AddVertices = [AddedSegments, AddedVertices] ( const FVector &A, const FVector &B )
+						{
+							AddedSegments.Add({A, B});
+							AddedVertices.AddUnique(A);
+							AddedVertices.AddUnique(B);
+						}
 
 						switch (CutCase)
 						{
@@ -108,16 +118,16 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 							{
 								CutA = Intersection(V0,V1);
 								CutB = Intersection(V0,V2);
-								if(I0UnderPlane)
+								if(I0UnderPlane) 
 								{
-									AddedVertices.Add(CutA, CutB);
+									AddVertices(CutA, CutB);
 									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
 																		ScaleTransform.TransformPosition(CutA), 
 																		ScaleTransform.TransformPosition(CutB));
 								}
-								else
+								else // neg alpha
 								{
-									AddedVertices.Add(CutB, CutA);
+									AddVertices(CutB, CutA);
 									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutB), 
 																		ScaleTransform.TransformPosition(CutA), 
 																		ScaleTransform.TransformPosition(V1));
@@ -135,14 +145,14 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 								CutB = Intersection(V1,V2);
 								if(I1UnderPlane)
 								{
-									AddedVertices.Add(CutB, CutA);
+									AddVertices(CutB, CutA);
 									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(CutA), 
 																		ScaleTransform.TransformPosition(V1), 
 																		ScaleTransform.TransformPosition(CutB));
 								}
-								else
+								else // neg beta
 								{
-									AddedVertices.Add(CutA, CutB);
+									AddVertices(CutA, CutB);
 									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
 																		ScaleTransform.TransformPosition(CutA), 
 																		ScaleTransform.TransformPosition(V2));
@@ -160,14 +170,14 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 								CutB = Intersection(V2,V1);
 								if(I2UnderPlane)
 								{
-									AddedVertices.Add(CutB, CutA);
+									AddVertices(CutB, CutA);
 									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V2), 
 																		ScaleTransform.TransformPosition(CutB), 
 																		ScaleTransform.TransformPosition(CutA));
 								}
-								else
+								else // neg gamma
 								{
-									AddedVertices.Add(CutA, CutB);
+									AddVertices(CutA, CutB);
 									Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(V0), 
 																		ScaleTransform.TransformPosition(V1), 
 																		ScaleTransform.TransformPosition(CutB));
@@ -190,14 +200,61 @@ float UNAVISPhysicsStatics::GetConvexTruncatedVolume(const physx::PxConvexMesh* 
 							break;
 						}
 
-						//
 						// this is all for the cutting part
 
-					} // for (int32 VertIdx = 2; VertIdx < PolyData.mNbVerts; ++ VertIdx)
+					} 
+					
+				} // end of for (int32 VertIdx = 2; VertIdx < PolyData.mNbVerts; ++ VertIdx)
 
-						//
-						// Let's start making faces with the hole 
-				} 
+				// If we dont have any points next step makes no sens
+				if(!AddedVertices.IsValidIndex(0))
+					return Volume;	
+
+				// find iso-centroid
+				FVector centroid = FVector::ZeroVector;
+				for(auto point : AddedVertices)
+					centroid += point;
+				centroid /= AddedVertices.Num();
+				
+				auto Ref = AddedVertices[0]; 
+				//
+				// Sort Vertices by orientation, this is only possible because we're in a convex shape
+				AddedVertices.Sort([PlaneNormal, centroid, Ref](const FVector& A, const FVector& B)
+				{
+					if(A == Ref)
+						return true;
+					if(B == Ref)
+						return false;
+					const auto D = FVector::CrossProduct(A - centroid, B - centroid);
+					return FVector::DotProduct(D, PlaneNormal) < 0.f
+				});
+
+				// we need to make sure the array is in correct order compared to stored segments
+				// this could be parrallelized
+				bool bInvert = false;
+				for (int idx = 1; idx < AddedVertices.Num(); idx ++)
+				{
+					if (AddedSegment.find(TPair<FVector,FVector>(AddedVertices[idx - 1],AddedVertices[idx] ))!= INDEX_NONE )
+					{
+						bInvert = true;
+						break;
+					}
+				}
+				
+				if(invert)
+					Algo::Reverse(AddedVertices);
+
+				//
+				// Let's start making faces with the hole 
+				TArray<FVector> Left, Right;
+				// split the array in two :
+				for (int idx = 0; idx < FGenericPlatformMath::CeilToInt(AddedVertices.Num() /2.f) - 1 ; idx ++)
+				{
+					Left.Add(AddedVertices[idx]);
+					Right.Add(AddedVertices.Last(idx));
+				}
+				
+				
 			}
 		}
 	}
