@@ -4,8 +4,33 @@
 #include "Algo/Reverse.h"						 // to reverse TArray
 #include "GenericPlatform/GenericPlatformMath.h" // To ceil
 
+#include "PhysXCookHelper.h" // PhysX
+
+#if WITH_PHYSX
+	#include "PhysXPublic.h"
+	//#include "PhysicsEngine/PhysXSupport.h"
+#endif // WITH_PHYSX
+
+#if WITH_PHYSX
+	//#include "IPhysXCookingModule.h"
+	//#include "IPhysXCooking.h"
+#endif
+
 struct FNAVISVolumeMath
 {
+private :
+
+	typedef TPair<FVector,FVector> FSegment;
+
+	// @see Engine\Source\Runtime\Engine\Private\PhysicsEngine\BodySetup.cpp
+	// http://amp.ece.cmu.edu/Publication/Cha/icip01_Cha.pdf
+	// http://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
+	static float SignedVolumeOfTriangle(const FVector& p1, const FVector& p2, const FVector& p3) 
+	{
+		return FVector::DotProduct(p1, FVector::CrossProduct(p2, p3)) / 6.0f;
+	}
+
+public :
 
 	static float GetConvexTruncatedVolume(const FKConvexElem *ConvexElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
@@ -16,7 +41,7 @@ struct FNAVISVolumeMath
 		
 		#if WITH_PHYSX
 
-		auto ConvexMesh = ConvexElement->GetConvexMesh()
+		physx::PxConvexMesh * ConvexMesh = ConvexElement->GetConvexMesh();
 		const FVector PlaneNormalSafe = (PlaneNormal.Size() == 0.f) ? FVector::UpVector : PlaneNormal.GetUnsafeNormal();
 		if (ConvexMesh != NULL )
 		{
@@ -28,10 +53,9 @@ struct FNAVISVolumeMath
 
 			const PxVec3 *Vertices = ConvexMesh->getVertices();
 			const PxU8 *Indices = ConvexMesh->getIndexBuffer();
-			TTuple
-				TArray<FVector>
-					AddedVertices;
-			TArray<TPair<FVector, FVector>> AddedSegments;
+
+			TArray<FVector>	AddedVertices;
+			TArray<FSegment> AddedSegments;
 
 			for (int32 PolyIdx = 0; PolyIdx < NumPolys; ++PolyIdx)
 			{
@@ -46,10 +70,10 @@ struct FNAVISVolumeMath
 
 						//
 						// We have to determine if our points are under our plane or not
-						auto IsUnderPlane = [PlaneRelativePosition, PlaneNormalSafe](const FVector &Position) -> bool {
+						auto IsUnderPlane = [&PlaneRelativePosition, &PlaneNormalSafe](const FVector &Position) -> bool {
 							const FVector Orient = Position - PlaneRelativePosition;
 							return FVector::DotProduct(Orient, PlaneNormalSafe) < 0;
-						}
+						};
 
 						const FVector V0 = P2UVector(Vertices[I0]);
 						const FVector V1 = P2UVector(Vertices[I1]);
@@ -81,15 +105,15 @@ struct FNAVISVolumeMath
 						// Case 2 : at least one point is under the plane :
 						else
 						{
-							auto Intersection = [PlaneRelativePosition, PlaneNormalSafe](const FVector &A, const FVector &B) -> FVector {
+							auto Intersection = [&PlaneRelativePosition, &PlaneNormalSafe](const FVector &A, const FVector &B) -> FVector {
 								const FVector Segment = B - A;
-								if (Segment.Size == 0)
+								if (Segment.Size() == 0)
 									return A;
 								const FVector NSegment = Segment.GetUnsafeNormal();
 								const FVector PlaneToA = A - PlaneRelativePosition;
 								float S = FVector::DotProduct(PlaneNormalSafe, PlaneToA) / FVector::DotProduct(PlaneNormalSafe, NSegment);
 								return NSegment * S;
-							}
+							};
 
 							// we will always have two cuts
 							FVector CutA,
@@ -115,11 +139,11 @@ struct FNAVISVolumeMath
 							else if ((I2UnderPlane && (!I0UnderPlane && !I1UnderPlane)) || (I1UnderPlane && I0UnderPlane && !I2UnderPlane))
 								CutCase = ECutCase::gamma;
 
-							auto AddVertices = [AddedSegments, AddedVertices](const FVector &A, const FVector &B) {
-								AddedSegments.Add({A, B});
+							auto AddVertices = [&AddedSegments, &AddedVertices](FVector &A, FVector &B) {
+								AddedSegments.Add(FSegment(A, B));
 								AddedVertices.AddUnique(A);
 								AddedVertices.AddUnique(B);
-							}
+							};
 
 							switch (CutCase)
 							{
@@ -227,13 +251,13 @@ struct FNAVISVolumeMath
 					auto Ref = AddedVertices[0];
 					//
 					// Sort Vertices by orientation, this is only possible because we're in a convex shape
-					AddedVertices.Sort([PlaneNormal, centroid, Ref](const FVector &A, const FVector &B) {
+					AddedVertices.Sort([&PlaneNormal, &centroid, &Ref](const FVector &A, const FVector &B) {
 						if (A == Ref)
 							return true;
 						if (B == Ref)
 							return false;
 						const auto D = FVector::CrossProduct(A - centroid, B - centroid);
-						return FVector::DotProduct(D, PlaneNormal) < 0.f
+						return FVector::DotProduct(D, PlaneNormal) < 0.f;
 					});
 
 					// we need to make sure the array is in correct order compared to stored segments
@@ -248,7 +272,7 @@ struct FNAVISVolumeMath
 						}
 					}
 
-					if (invert)
+					if (bInvert)
 						Algo::Reverse(AddedVertices);
 
 					//
@@ -261,9 +285,9 @@ struct FNAVISVolumeMath
 						Left.Add(AddedVertices[idx]);
 						Right.Add(AddedVertices.Last(idx));
 						// this needs to be fixed
-						Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V0),
-														 ScaleTransform.TransformPosition(V1),
-														 ScaleTransform.TransformPosition(V2));
+	                    Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Left[idx - 1]), // previous Left
+														    ScaleTransform.TransformPosition(Right[idx - 1]), // current right
+														    ScaleTransform.TransformPosition(Right[idx - 2])); // previous Right
 					}
 				}
 			}

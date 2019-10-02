@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "NAVIS_Physics.h"
 #include "CoreMinimal.h"
 #include "Engine/Public/PhysicsPublic.h"
 #include "Components/PrimitiveComponent.h"
