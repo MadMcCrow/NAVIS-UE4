@@ -4,7 +4,7 @@ This project aims to create a semi-accurate (read "look like real but isn't") bo
 The project is split into various modules aimed at delivering various aspects of the game. Since everything is cut into modules you can use some of this code to add floating things to your game.
 
 ## MODULES
-###NAVIS
+### NAVIS
 This is the base module, it will provide classes requiered everywhere, so not much actually.
 
 ### NAVIS_Physics
