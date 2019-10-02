@@ -41,13 +41,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Measures")
 		static float GetPrimitiveVolume(const UPrimitiveComponent * in);  
 
-	UFUNCTION()
+	UFUNCTION(BlueprintPure, Category = "Measures")
 		static float GetPrimitiveVolumeAtLevel(const UPrimitiveComponent * in, const FVector &PlaneWorldPosition, const FVector &PlaneNormal = FVector::UpVector );
 
-#if WITH_PHYSX
-	/** Finish creating the physics meshes and update the body setup data with cooked data */
-	static float GetConvexTruncatedVolume(const physx::PxConvexMesh* ConvexMesh,  const FVector &PlaneRelativePosition = FVector::ZeroVector, const FVector &PlaneNormal = FVector::UpVector );
-#endif // WITH_PHYSX
+	UFUNCTION()
+		static float GetBodySetupVolumeAtLevel(const UBodySetup * in, const FVector &PlaneRelativePosition, const FVector &PlaneNormal = FVector::UpVector );
 
 
 };
