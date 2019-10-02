@@ -8,18 +8,18 @@
 
 #if WITH_PHYSX
 	#include "PhysXPublic.h"
-	//#include "PhysicsEngine/PhysXSupport.h"
+	//#include "PhysicsEngine/PhysXSupport.h" // not necessary
 #endif // WITH_PHYSX
 
-#if WITH_PHYSX
-	//#include "IPhysXCookingModule.h"
-	//#include "IPhysXCooking.h"
-#endif
 
+/** 
+ *	FNAVISVolumeMath struct used as a namespace to hold all functions related to Volume calculation in NAVIS
+ */
 struct FNAVISVolumeMath
 {
 private :
 
+	// typedef for more readability
 	typedef TPair<FVector,FVector> FSegment;
 
 	// @see Engine\Source\Runtime\Engine\Private\PhysicsEngine\BodySetup.cpp
@@ -31,8 +31,11 @@ private :
 	}
 
 public :
-
-	static float GetConvexTruncatedVolume(const FKConvexElem *ConvexElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
+	
+	/** 
+	 *	GetConvexTruncatedVolume Calculate volume of a Convex element (of a body setup for example) when cut by a plane  
+	 */
+	static float GetConvexTruncatedVolume(const FKConvexElem &ConvexElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
 		float Volume = 0.0f;
 
@@ -41,7 +44,7 @@ public :
 		
 		#if WITH_PHYSX
 
-		physx::PxConvexMesh * ConvexMesh = ConvexElement->GetConvexMesh();
+		physx::PxConvexMesh * ConvexMesh = ConvexElement.GetConvexMesh();
 		const FVector PlaneNormalSafe = (PlaneNormal.Size() == 0.f) ? FVector::UpVector : PlaneNormal.GetUnsafeNormal();
 		if (ConvexMesh != NULL )
 		{
@@ -296,14 +299,16 @@ public :
 		return Volume;
 	}
 
-	// https://en.wikipedia.org/wiki/Spherical_cap
-	static float GetSphereTruncatedVolume(const FKSphereElem *SphereElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
+	/** 
+	 *	GetSphylTruncatedVolume Calculate volume of a sphyl element (of a body setup for example) when cut by a plane
+	 *	@see https://en.wikipedia.org/wiki/Spherical_cap
+	 */
+	static float GetSphereTruncatedVolume(const FKSphereElem &SphereElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
 		float Volume = 0.f;
-		if(!SphereElement)
-			return Volume;
 
-		float Radius = SphereElement->Radius * Scale.GetMin();
+
+		float Radius = SphereElement.Radius * Scale.GetMin();
 		
 		//we first need to se ethe sphere in the Plane local space
 		const FVector NormalizedPlaneNormal =  PlaneNormal.GetSafeNormal();
@@ -320,7 +325,7 @@ public :
 
 		// completely under
 		if(RelPos.Z <= Radius )
-			return SphereElement->GetVolume();
+			return SphereElement.GetVolume();
 		
 		const float height = (Radius - RelPos.Z);
 		// Volume of a sphere  :  {  4 / 3 * PI * FMath::Pow(Radius * Scale.GetMin(), 3); }
@@ -329,20 +334,29 @@ public :
 
 		return Volume;	
 	}
-
-	static float GetSphylTruncatedVolume(const FKSphylElem *ConvexElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
+	
+	/** 
+	 *	GetSphylTruncatedVolume Calculate volume of a sphyl element (of a body setup for example) when cut by a plane  
+	 */
+	static float GetSphylTruncatedVolume(const FKSphylElem &SphylElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
 		UE_LOG(LogNAVIS_Physics, Error, TEXT("Sphyl not implemented"));
 		return 0.f;
 	}
 
-	static float GetTaperedCapsuleTruncatedVolume(const FKTaperedCapsuleElem *ConvexElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
+	/** 
+	 *	GetTaperedCapsuleTruncatedVolume Calculate volume of a tapered Capsule  element (of a body setup for example) when cut by a plane  
+	 */
+	static float GetTaperedCapsuleTruncatedVolume(const FKTaperedCapsuleElem &TaperedCapsuleElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
 		UE_LOG(LogNAVIS_Physics, Error, TEXT("TaperedCapsule not implemented"));
 		return 0.f;
 	}
-
-	static float GetBoxTruncatedVolume(const FKBoxElem *ConvexElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
+	
+	/** 
+	 *	GetBoxTruncatedVolume Calculate volume of a box element (of a body setup for example) when cut by a plane  
+	 */
+	static float GetBoxTruncatedVolume(const FKBoxElem &BoxElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
 		UE_LOG(LogNAVIS_Physics, Error, TEXT("box not implemented"));
 		return 0.f;
