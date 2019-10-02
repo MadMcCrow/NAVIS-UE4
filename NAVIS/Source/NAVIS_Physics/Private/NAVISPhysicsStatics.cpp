@@ -4,14 +4,12 @@
 #include "NAVIS_PhysicsPCH.h"
 #include "NAVISVolumeMath.h"
 
-
-
 float UNAVISPhysicsStatics::GetActorVolume(const AActor * in)
 {
 	if(!in)
 		return 0.f;
 	return GetPrimitiveVolume( Cast<UPrimitiveComponent>(in->GetRootComponent()));
-} 
+}
 
 float UNAVISPhysicsStatics::GetPrimitiveVolume(const UPrimitiveComponent * in)
 {
