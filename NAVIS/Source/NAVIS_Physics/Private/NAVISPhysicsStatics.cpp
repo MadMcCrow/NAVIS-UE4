@@ -105,8 +105,18 @@ float UNAVISPhysicsStatics::GetBodyInstanceVolumeAtLevel(const FBodyInstance &in
 }
 
 
-FVector GetArchimedesForce(const AActor *in)
+FVector UNAVISPhysicsStatics::GetArchimedesForce(const AActor *in, const FVector &liquidRelativePosition, const FVector &liquidNormal, float liquidDensity )
 {
-	return FVector::ZeroVector;
+	// We estimate the liquid to be uniform in density, In the real world, sea is not .
+	const FVector direction = -1 * liquidNormal.GetSafeNormal();
+	
+	const auto solid = GetActorPrimitive(in);
+	if(!solid)
+		return FVector::ZeroVector;
+	const auto volume = GetBodyInstanceVolumeAtLevel(solid->GetBodyInstance(),liquidRelativePosition, liquidNormal );
+	float forceN = liquidDensity * volume;
+	return force *  direction ;
+	
+
 }
 
