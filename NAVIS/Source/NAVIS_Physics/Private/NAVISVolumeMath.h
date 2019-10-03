@@ -3,7 +3,7 @@
 #include "NAVIS_PhysicsPCH.h"
 #include "Algo/Reverse.h"						 // to reverse TArray
 #include "GenericPlatform/GenericPlatformMath.h" // To ceil
-
+#include "Kismet/KismetMathLibrary.h"
 #include "PhysXCookHelper.h" // PhysX
 
 #if WITH_PHYSX
@@ -30,21 +30,12 @@ private :
 		return FVector::DotProduct(p1, FVector::CrossProduct(p2, p3)) / 6.0f;
 	}
 
-public :
-	
-	/** 
-	 *	GetConvexTruncatedVolume Calculate volume of a Convex element (of a body setup for example) when cut by a plane  
-	 */
-	static float GetConvexTruncatedVolume(const FKConvexElem &ConvexElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
+#if WITH_PHYSX
+	// GetPhysXConvexTruncatedVolume()	works for all convex meshes as all are using physx Convex mesh
+	static float GetPhysXConvexTruncatedVolume(physx::PxConvexMesh * ConvexMesh, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
 		float Volume = 0.0f;
-
-		if(!ConvexElement)
-			return Volume;
 		
-		#if WITH_PHYSX
-
-		physx::PxConvexMesh * ConvexMesh = ConvexElement.GetConvexMesh();
 		const FVector PlaneNormalSafe = (PlaneNormal.Size() == 0.f) ? FVector::UpVector : PlaneNormal.GetUnsafeNormal();
 		if (ConvexMesh != NULL )
 		{
@@ -268,7 +259,7 @@ public :
 					bool bInvert = false;
 					for (int idx = 1; idx < AddedVertices.Num(); idx++)
 					{
-						if (AddedSegment.find(TPair<FVector, FVector>(AddedVertices[idx - 1], AddedVertices[idx])) != INDEX_NONE)
+						if (AddedSegments.Find(FSegment(AddedVertices[idx - 1], AddedVertices[idx])) != INDEX_NONE)
 						{
 							bInvert = true;
 							break;
@@ -295,8 +286,22 @@ public :
 				}
 			}
 		}
-		#endif // WITH_PHYSX
 		return Volume;
+	}
+#endif // WITH_PHYSX
+	
+public:
+	
+	/** 
+	 *	GetConvexTruncatedVolume Calculate volume of a Convex element (of a body setup for example) when cut by a plane  
+	 */
+	static float GetConvexTruncatedVolume(const FKConvexElem &ConvexElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
+	{	
+	#if WITH_PHYSX
+		auto pxConvex = ConvexElement.GetConvexMesh();
+		return GetPhysXConvexTruncatedVolume(pxConvex, PlaneRelativePosition, PlaneNormal, Scale);
+	#endif // WITH_PHYSX
+		return 0.f;
 	}
 
 	/** 
@@ -312,7 +317,7 @@ public :
 		
 		//we first need to se ethe sphere in the Plane local space
 		const FVector NormalizedPlaneNormal =  PlaneNormal.GetSafeNormal();
-		Frotator PlaneOrientation =  UKismetMathLibrary::MakeRotFromZ(NormalizedPlaneNormal);
+		FRotator PlaneOrientation =  UKismetMathLibrary::MakeRotFromZ(NormalizedPlaneNormal);
 		// get the plane transform
 		const FTransform PlaneTrans = FTransform(PlaneOrientation, PlaneRelativePosition, FVector::OneVector);
 		
@@ -325,7 +330,7 @@ public :
 
 		// completely under
 		if(RelPos.Z <= Radius )
-			return SphereElement.GetVolume();
+			return SphereElement.GetVolume(Scale);
 		
 		const float height = (Radius - RelPos.Z);
 		// Volume of a sphere  :  {  4 / 3 * PI * FMath::Pow(Radius * Scale.GetMin(), 3); }
@@ -360,5 +365,61 @@ public :
 	{
 		UE_LOG(LogNAVIS_Physics, Error, TEXT("box not implemented"));
 		return 0.f;
+	}
+
+	/** 
+	 *	GetPhysicsTruncatedVolume Calculate volume of a Physx element (of a body instance most likely) when cut by a plane  
+	 */
+	static float GetPhysicsTruncatedVolume(FPhysicsShapeHandle &PhysXElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale )
+	{
+		float Volume = 0.f;
+	#if WITH_PHYSX
+
+		if(!PhysXElement.IsValid())
+			return Volume;
+
+		const auto Type = PhysXElement.Shape->getGeometryType();
+		switch(Type)
+		{
+			case physx::PxGeometryType::eCAPSULE 		:
+			UE_LOG(LogNAVIS_Physics, Error, TEXT("GetPhysxTruncatedVolume : PhysX PxCapsuleGeometry direct calculation not implemented"));
+			{
+				physx::PxCapsuleGeometry Capsule;
+				PhysXElement.Shape->getCapsuleGeometry(Capsule);
+			}
+			break;
+			case physx::PxGeometryType::eBOX	 		:
+			UE_LOG(LogNAVIS_Physics, Error, TEXT("GetPhysxTruncatedVolume : PhysX PxBoxGeometry direct calculation not implemented"));
+			{
+				physx::PxBoxGeometry Box;
+				PhysXElement.Shape->getBoxGeometry(Box);
+			}
+			break;
+			case physx::PxGeometryType::eCONVEXMESH	:
+			{
+				physx::PxConvexMeshGeometry Convex;
+				PhysXElement.Shape->getConvexMeshGeometry(Convex);
+				if(Convex.isValid() && Convex.convexMesh)
+				{
+					Volume = GetPhysXConvexTruncatedVolume(Convex.convexMesh, PlaneRelativePosition, PlaneNormal, Scale);
+				}
+			}
+			break;
+			case physx::PxGeometryType::eSPHERE			:	
+			UE_LOG(LogNAVIS_Physics, Error, TEXT("GetPhysxTruncatedVolume : PhysX PxSphereGeometry direct calculation not implemented"));
+			{
+				physx::PxSphereGeometry Sphere;
+				PhysXElement.Shape->getSphereGeometry(Sphere);
+			}
+			break;
+			case physx::PxGeometryType::eHEIGHTFIELD	:
+			case physx::PxGeometryType::ePLANE			:
+			case physx::PxGeometryType::eTRIANGLEMESH	:
+			default :
+			UE_LOG(LogNAVIS_Physics, Error, TEXT("GetPhysxTruncatedVolume : PhysX Extra cases direct calculation not implemented"));
+			break;
+		}
+	#endif // WITH_PHYSX
+	return Volume;
 	}
 };

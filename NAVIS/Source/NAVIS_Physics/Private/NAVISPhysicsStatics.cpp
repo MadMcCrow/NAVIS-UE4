@@ -3,12 +3,42 @@
 #include "NAVISPhysicsStatics.h"
 #include "NAVIS_PhysicsPCH.h"
 #include "NAVISVolumeMath.h"
+#include "Engine/World.h"
+
+
+FVector UNAVISPhysicsStatics::GetGravityDirectionAndStrength(const UObject* WorldContextObject)
+{
+	if(!WorldContextObject || !WorldContextObject->GetWorld())
+		return FVector::ZeroVector;
+	
+	return FVector(0.f, 0.f, WorldContextObject->GetWorld()->GetGravityZ());
+}
+
+UPrimitiveComponent * UNAVISPhysicsStatics::GetActorPrimitive(const AActor *in)
+{
+	if(!in)
+		return nullptr;
+
+	UPrimitiveComponent * Component = Cast<UPrimitiveComponent>(in->GetRootComponent());
+	
+	if(!Component)
+		Component = in->FindComponentByClass<UPrimitiveComponent>();
+
+	return Component;
+}
+
+float UNAVISPhysicsStatics::GetActorMass(const AActor *in)
+{
+	if(!in || !GetActorPrimitive(in))
+		return 0.f;
+	return GetActorPrimitive(in)->GetMass();
+}
 
 float UNAVISPhysicsStatics::GetActorVolume(const AActor * in)
 {
-	if(!in)
+	if(!in || !GetActorPrimitive(in))
 		return 0.f;
-	return GetPrimitiveVolume( Cast<UPrimitiveComponent>(in->GetRootComponent()));
+	return GetPrimitiveVolume(GetActorPrimitive(in));
 }
 
 float UNAVISPhysicsStatics::GetPrimitiveVolume(const UPrimitiveComponent * in)
@@ -21,10 +51,8 @@ float UNAVISPhysicsStatics::GetPrimitiveVolume(const UPrimitiveComponent * in)
 }
 
 
-static float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent * in, const FVector &PlaneWorldPosition, const FVector &PlaneNormal = FVector::UpVector )
+float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent * in, const FVector &PlaneWorldPosition, const FVector &PlaneNormal)
 {
-	
-
 	if(!in)
 		return 0.f;
 
@@ -35,10 +63,11 @@ static float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveCom
 	
 }
 
-static float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup * in, const FVector &PlaneRelativePosition, const FVector &PlaneNormal = FVector::UpVector )
+float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup * in, const FVector &PlaneRelativePosition, const FVector &PlaneNormal)
 {
 
 	float Volume = 0.f;
+	FVector Scale = FVector::OneVector;
 	// Sphere			:
 	for (auto itr : in->AggGeom.SphereElems)
 		Volume += FNAVISVolumeMath::GetSphereTruncatedVolume(itr, PlaneRelativePosition, PlaneNormal, Scale);
@@ -61,4 +90,23 @@ static float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup * 
 }
 
 
+float UNAVISPhysicsStatics::GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FVector &PlaneRelativePosition, const FVector &PlaneNormal )
+{
+	float Volume = 0.f;
+    TArray<FPhysicsShapeHandle> Shapes;
+
+	in.GetAllShapes_AssumesLocked(Shapes);
+
+	for (FPhysicsShapeHandle Itr : Shapes)
+	{
+		Volume += FNAVISVolumeMath::GetPhysicsTruncatedVolume(Itr,PlaneRelativePosition, PlaneNormal, FVector::OneVector );
+	}
+	return Volume;
+}
+
+
+FVector GetArchimedesForce(const AActor *in)
+{
+	return FVector::ZeroVector;
+}
 
