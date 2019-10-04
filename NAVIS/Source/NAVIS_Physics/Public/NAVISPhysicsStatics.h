@@ -7,11 +7,44 @@
 
 class AActor;
 
+USTRUCT()
+struct NAVIS_PHYSICS_API FPlane
+{
+protected:
+	UPROPERTY()
+	FVector Position;
+
+	UPROPERTY()
+	FVector Normal;
+
+public:
+	FPlane(const FVector &planePosition = FVector::ZeroVector, const FVector &planeNormal = FVector::UpVector)
+	{
+		Position = planePosition;
+		Normal = planeNormal;
+	}
+
+	FVector GetPosition() const { return Position; }
+	FVector GetNormal() const { return Normal; }
+}
+
+USTRUCT()
+struct NAVIS_PHYSICS_API FLiquidSurface : public FPlane
+{
+protected:
+	UPROPERTY()
+	float Density;
+
+public:
+
+	float GetDensity() const { return Density; }	
+
+}
+
 /**
  * Function used in various physics calculations
  */
-UCLASS(Category = "Physics|Statics")
-class UNAVISPhysicsStatics : public UBlueprintFunctionLibrary
+UCLASS(Category = "Physics|Statics") class NAVIS_PHYSICS_API UNAVISPhysicsStatics : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
@@ -46,8 +79,8 @@ public:
 	 * 	GetGravityDirectionAndStrength()		gets the current gravity set in level
 	 * 	@param WorldContextObject				valid object in a valid world context
 	 */
-	UFUNCTION(BlueprintPure, Category = "World", meta = (WorldContext = "WorldContextObject")) 
-	static FVector GetGravityDirectionAndStrength(const UObject* WorldContextObject);
+	UFUNCTION(BlueprintPure, Category = "World", meta = (WorldContext = "WorldContextObject"))
+	static FVector GetGravityDirectionAndStrength(const UObject *WorldContextObject);
 
 	/**
 	 * 	GetActorPrimitive()		Get the first primitive component used in this actor 
@@ -55,7 +88,7 @@ public:
 	 *	@return					A valid component or nullptr if none was found
 	 */
 	UFUNCTION(BlueprintPure, Category = "Actor")
-	static UPrimitiveComponent * GetActorPrimitive(const AActor *in);
+	static UPrimitiveComponent *GetActorPrimitive(const AActor *in);
 
 	/**
 	 * 	GetActorMass()					Try to get actor mass as described in UE4
@@ -81,29 +114,26 @@ public:
 	/**
 	 * 	GetBodySetupVolumeAtLevel()		Calculate Volume for a component when cut by a plane (like a sea level)
 	 * 	@param in						the primitive component (mostly static mesh and skeletal meshes components) to consider for the measure
-	 *	@param PlaneWorldPosition		Position of a point of the plane in world space
-	 *	@param PlaneNormal				Normal of the cutting plane. since the normal of water is the inverse of gravity, we default to Up (0,0,1)
+	 *	@param worldPlane				Plane made of a position of a point of the plane in world space and its normal
 	 */
 	UFUNCTION(BlueprintPure, Category = "Volume")
-	static float GetPrimitiveVolumeAtLevel(const UPrimitiveComponent *in, const FVector &PlaneWorldPosition, const FVector &PlaneNormal = FVector::UpVector);
+	static float GetPrimitiveVolumeAtLevel(const UPrimitiveComponent *in, const FPlane &worldPlane);
 
 	/**
 	 * 	GetBodySetupVolumeAtLevel()		Calculate Volume for a body setup when cut by a plane (like a sea level)
 	 * 	@param in						The body setup to consider.
-	 *	@param PlaneRelativePosition	Position of a point of the plane in relative space compared to the BodySetup owning primitive Comp
-	 *	@param PlaneNormal				Normal of the cutting plane. since the normal of water is the inverse of gravity, we default to Up (0,0,1)
+ 	 *	@param relativePlane			Plane made of a position of a point of the plane in relative space and its normal
 	 */
 	UFUNCTION()
-	static float GetBodySetupVolumeAtLevel(const UBodySetup *in, const FVector &PlaneRelativePosition, const FVector &PlaneNormal = FVector::UpVector);
+	static float GetBodySetupVolumeAtLevel(const UBodySetup *in, const FPlane &relativePlane);
 
 	/**
 	 * 	GetBodyInstanceVolumeAtLevel()	Calculate Volume for a body setup when cut by a plane (like a sea level)
 	 * 	@param in						The body Instance to consider.
-	 *	@param PlaneRelativePosition	Position of a point of the plane in relative space compared to the BodySetup owning primitive Comp
-	 *	@param PlaneNormal				Normal of the cutting plane. since the normal of water is the inverse of gravity, we default to Up (0,0,1)
+ 	 *	@param relativePlane			Plane made of a position of a point of the plane in relative space and its normal
 	 */
 	UFUNCTION()
-	static float GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FVector &PlaneRelativePosition, const FVector &PlaneNormal = FVector::UpVector);
+	static float GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FPlane &relativePlane);
 
 	/**
 	 * 	GetArchimedesForce()			Calculate Force applied to an actor when put in water
@@ -113,9 +143,5 @@ public:
 	 *	@return 						A Force in Newton stored in a world vector 
 	 */
 	UFUNCTION(BlueprintPure, Category = "Force")
-	static FVector GetArchimedesForce(const AActor *in, const FVector &PlaneWorldPosition = FVector::ZeroVector, const FVector &PlaneNormal = FVector::UpVector);
-
-
-
-
+	static FVector GetArchimedesForce(const AActor *in, const FPlane &relativePlane);
 };
