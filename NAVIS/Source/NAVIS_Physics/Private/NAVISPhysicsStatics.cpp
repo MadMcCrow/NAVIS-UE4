@@ -108,9 +108,7 @@ FVector UNAVISPhysicsStatics::GetArchimedesForce(const AActor *in, const FLiquid
 	const auto solid = GetActorPrimitive(in);
 	if (!solid)
 		return FVector::ZeroVector;
-
-	const  FVector liquidRelativePos =  solid->GetComponentToWorld().TransformPosition(liquid.GetPosition());
-	const auto volume = GetBodyInstanceVolumeAtLevel(solid->GetBodyInstance(), liquidRelativePos, liquid.GetNormal());
+	const auto volume = GetBodyInstanceVolumeAtLevel(solid->GetBodyInstance(), liquid.GetLocalGosition(solid.GetComponentToWorld()), liquid.GetLocalNormal(solid.GetComponentToWorld()));
 	float forceN = liquid.GetDensity() * volume;
 	return force * direction;
 }
