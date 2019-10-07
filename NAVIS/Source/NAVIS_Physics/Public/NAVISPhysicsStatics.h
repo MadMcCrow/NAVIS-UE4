@@ -32,7 +32,7 @@ public:
 		}
 		return FVector(X, Y, Z);
 	}
-
+	
 	void SetNormalToUnit()
 	{
 		// doing it UE4 style ;)
@@ -51,6 +51,22 @@ public:
 	{
 		return FVector::PointPlaneProject(location, *this);
 	} 
+
+	inline FVector GetPosition() const { return Position; }
+	inline FVector GetNormal() const { return Normal; }
+
+    inline FVector GetLocalPosition(const FTransform &localToWorld ) const
+    {
+        return localToWorld.TransformPosition(GetPosition());
+    }
+
+    inline FVector GetLocalNormal(const FTransform &localToWorld ) const
+    {
+        return localToWorld.TransformVector(GetNormal());
+    }
+
+}
+
 
 	FORCEINLINE FVector GetPlaneOrigin() const 
 	{
@@ -74,8 +90,15 @@ protected:
 	float Density;
 
 public:
+<<<<<<< HEAD
 	float GetDensity() const { return Density; }
 };
+=======
+
+	float GetDensity() const { return Density; }
+
+}
+>>>>>>> 07b995fa1aaeff69ae194bae31bf8a2497105e6d
 
 /**
  * Function used in various physics calculations
@@ -119,7 +142,7 @@ public:
 	static FVector GetGravityDirectionAndStrength(const UObject *WorldContextObject);
 
 	/**
-	 * 	GetActorPrimitive()		Get the first primitive component used in this actor 
+	 * 	GetActorPrimitive()		Get the first primitive component used in this actor
 	 * 	@param in				an owner containing at least one primitive component
 	 *	@return					A valid component or nullptr if none was found
 	 */
@@ -176,7 +199,7 @@ public:
 	 * 	@param in						The Actor in Water
 	 *	@param PlaneRelativePosition	Position of a point of the plane in world space, defaulted to world origin
 	 *	@param PlaneNormal				Normal of the cutting plane. since the normal of water is the inverse of gravity, we default to Up (0,0,1)
-	 *	@return 						A Force in Newton stored in a world vector 
+	 *	@return 						A Force in Newton stored in a world vector
 	 */
 	UFUNCTION(BlueprintPure, Category = "Force")
 	static FVector GetArchimedesForce(const AActor *in, const FNavisPlane &relativePlane);
