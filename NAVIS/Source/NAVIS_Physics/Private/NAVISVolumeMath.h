@@ -18,7 +18,6 @@
 struct FNAVISVolumeMath
 {
 private :
-
 	// typedef for more readability
 	typedef TPair<FVector,FVector> FSegment;
 
@@ -360,11 +359,25 @@ public:
 	
 	/** 
 	 *	GetBoxTruncatedVolume Calculate volume of a box element (of a body setup for example) when cut by a plane  
+	 *	https://math.stackexchange.com/a/455711
 	 */
 	static float GetBoxTruncatedVolume(const FKBoxElem &BoxElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
 		UE_LOG(LogNAVIS_Physics, Error, TEXT("box not implemented"));
-		return 0.f;
+
+		// first find a scale that turn the cuboid into a real cube :
+		FVector BoxScale = FVector(BoxElement.X, BoxElement.Y, BoxElement.Z);
+
+		// we consider the box in 0.0; with extend only in the positive 
+		FVector BoxDimension = FVector(BoxElement.X * 2, BoxElement.Y * 2, BoxElement.Z * 2);
+		FVector PlaneBoxPos = PlaneRelativePosition - BoxScale;
+		//const float Alpha = 
+
+		// now we can work in a 1:1:1 scale for the plane 
+		const FTransform PlaneTransform = FTransform(UKismetMathLibrary::MakeRotFromZ(NormalizedPlaneNormal), PlaneBoxPos,  BoxScale);
+		float Volume = 0.f;
+	
+		return Volume;
 	}
 
 	/** 

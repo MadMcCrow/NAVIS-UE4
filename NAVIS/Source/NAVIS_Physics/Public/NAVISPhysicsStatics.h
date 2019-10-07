@@ -8,38 +8,74 @@
 class AActor;
 
 USTRUCT()
-struct NAVIS_PHYSICS_API FPlane
+struct NAVIS_PHYSICS_API FNavisPlane : public FPlane
 {
-protected:
-	UPROPERTY()
-	FVector Position;
-
-	UPROPERTY()
-	FVector Normal;
-
+	GENERATED_BODY()
 public:
-	FPlane(const FVector &planePosition = FVector::ZeroVector, const FVector &planeNormal = FVector::UpVector)
+
+	//	Override all constructors to normalise after constructor
+	FNavisPlane() :FPlane() {};
+
+	FORCEINLINE FNavisPlane(const FVector4& V) : FPlane(V){	SetNormalToUnit();	}
+	FORCEINLINE FNavisPlane(float InX, float InY, float InZ, float InW): FPlane(InX, InY,  InZ, InW) {	SetNormalToUnit();	}
+	FORCEINLINE FNavisPlane(FVector InNormal, float InW): FPlane( InNormal,  InW) {	SetNormalToUnit();	}
+	FORCEINLINE FNavisPlane(FVector InBase, const FVector &InNormal): FPlane( InBase,  InNormal) {	SetNormalToUnit();	}
+	FORCEINLINE FNavisPlane(FVector A, FVector B, FVector C) : FPlane( A,  B,  C) {	SetNormalToUnit();	}
+
+	FORCEINLINE FVector GetNormal() const
 	{
-		Position = planePosition;
-		Normal = planeNormal;
+		const float SquareSum = X*X + Y*Y + Z*Z;
+		if(SquareSum != 0.f && SquareSum != 1.f)
+		{
+			const float scale = FMath::InvSqrt(SquareSum);
+			return FVector(X*SquareSum, Y*SquareSum, Z*SquareSum);
+		}
+		return FVector(X, Y, Z);
 	}
 
-	FVector GetPosition() const { return Position; }
-	FVector GetNormal() const { return Normal; }
-}
+	void SetNormalToUnit()
+	{
+		// doing it UE4 style ;)
+		const float SquareSum = X*X + Y*Y + Z*Z;
+		if (SquareSum != 0.f && SquareSum != 1.f)
+		{
+			const float scale = FMath::InvSqrt(SquareSum);
+			X = X/scale;
+			Y = Y/scale;
+			Z = Z/scale;
+			W = W/scale;
+		}
+	}
+    
+	FORCEINLINE FVector	GetClosestPoint(const FVector location) const
+	{
+		return FVector::PointPlaneProject(location, *this);
+	} 
 
-USTRUCT()
-struct NAVIS_PHYSICS_API FLiquidSurface : public FPlane
+	FORCEINLINE FVector GetPlaneOrigin() const 
+	{
+		//SetNormalToUnit(); // might not be necessary
+		return FVector( X, Y, Z ) * W; // Verify this
+	}
+
+	// 	This should be removed
+	FVector	GetPosition() const
+	{
+		return GetPlaneOrigin();
+	} 
+};
+
+USTRUCT() 
+struct NAVIS_PHYSICS_API FLiquidSurface : public FNavisPlane
 {
+	GENERATED_BODY()
 protected:
 	UPROPERTY()
 	float Density;
 
 public:
-
-	float GetDensity() const { return Density; }	
-
-}
+	float GetDensity() const { return Density; }
+};
 
 /**
  * Function used in various physics calculations
@@ -117,7 +153,7 @@ public:
 	 *	@param worldPlane				Plane made of a position of a point of the plane in world space and its normal
 	 */
 	UFUNCTION(BlueprintPure, Category = "Volume")
-	static float GetPrimitiveVolumeAtLevel(const UPrimitiveComponent *in, const FPlane &worldPlane);
+	static float GetPrimitiveVolumeAtLevel(const UPrimitiveComponent *in, const FNavisPlane &worldPlane);
 
 	/**
 	 * 	GetBodySetupVolumeAtLevel()		Calculate Volume for a body setup when cut by a plane (like a sea level)
@@ -125,7 +161,7 @@ public:
  	 *	@param relativePlane			Plane made of a position of a point of the plane in relative space and its normal
 	 */
 	UFUNCTION()
-	static float GetBodySetupVolumeAtLevel(const UBodySetup *in, const FPlane &relativePlane);
+	static float GetBodySetupVolumeAtLevel(const UBodySetup *in, const FNavisPlane &relativePlane);
 
 	/**
 	 * 	GetBodyInstanceVolumeAtLevel()	Calculate Volume for a body setup when cut by a plane (like a sea level)
@@ -133,7 +169,7 @@ public:
  	 *	@param relativePlane			Plane made of a position of a point of the plane in relative space and its normal
 	 */
 	UFUNCTION()
-	static float GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FPlane &relativePlane);
+	static float GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FNavisPlane &relativePlane);
 
 	/**
 	 * 	GetArchimedesForce()			Calculate Force applied to an actor when put in water
@@ -143,5 +179,5 @@ public:
 	 *	@return 						A Force in Newton stored in a world vector 
 	 */
 	UFUNCTION(BlueprintPure, Category = "Force")
-	static FVector GetArchimedesForce(const AActor *in, const FPlane &relativePlane);
+	static FVector GetArchimedesForce(const AActor *in, const FNavisPlane &relativePlane);
 };

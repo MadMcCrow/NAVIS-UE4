@@ -49,7 +49,7 @@ float UNAVISPhysicsStatics::GetPrimitiveVolume(const UPrimitiveComponent *in)
 	return in->BodyInstance.BodySetup.Get()->GetVolume(FVector::OneVector);
 }
 
-float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent *in, cconst FPlane &worldPlane)
+float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent *in, const FNavisPlane &worldPlane)
 {
 	if (!in)
 		return 0.f;
@@ -57,10 +57,10 @@ float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent 
 	const FVector PlaneRelativePosition = in->GetComponentToWorld().TransformPosition(worldPlane.GetPosition());
 
 	if (in->BodyInstance.BodySetup.Get())
-		return GetBodySetupVolumeAtLevel(in->BodyInstance.BodySetup.Get(), PlaneRelativePosition, worldPlane.GetNormal());
+		return GetBodySetupVolumeAtLevel(in->BodyInstance.BodySetup.Get(), FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
 }
 
-float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup *in, const FPlane &relativePlane)
+float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup *in, const FNavisPlane &relativePlane)
 {
 
 	float Volume = 0.f;
@@ -86,7 +86,7 @@ float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup *in, cons
 	return Volume;
 }
 
-float UNAVISPhysicsStatics::GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FPlane &relativePlane)
+float UNAVISPhysicsStatics::GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FNavisPlane &relativePlane)
 {
 	float Volume = 0.f;
 	TArray<FPhysicsShapeHandle> Shapes;
@@ -110,7 +110,8 @@ FVector UNAVISPhysicsStatics::GetArchimedesForce(const AActor *in, const FLiquid
 		return FVector::ZeroVector;
 
 	const  FVector liquidRelativePos =  solid->GetComponentToWorld().TransformPosition(liquid.GetPosition());
-	const auto volume = GetBodyInstanceVolumeAtLevel(solid->GetBodyInstance(), liquidRelativePos, liquid.GetNormal());
+	
+	const float volume = GetBodyInstanceVolumeAtLevel(solid->GetBodyInstance(), liquidRelativePos, liquid.GetNormal());
 	float forceN = liquid.GetDensity() * volume;
-	return force * direction;
+	return forceN * direction;
 }
