@@ -8,13 +8,16 @@
 			"Name": "NAVIS",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
-		}
-	],
-	"Modules": [
+		},
 		{
 			"Name": "NAVIS_Physics",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PostEngineInit"
+		},
+		{
+			"Name": "NAVIS_Water",
+			"Type": "Runtime",
+			"LoadingPhase": "PostEngineInit"
 		}
 	]
 }

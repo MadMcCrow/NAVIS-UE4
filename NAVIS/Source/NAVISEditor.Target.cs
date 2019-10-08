@@ -9,6 +9,6 @@ public class NAVISEditorTarget : TargetRules
 	{
 		Type = TargetType.Editor;
 
-		ExtraModuleNames.AddRange( new string[] { "NAVIS", "NAVIS_Physics"} );
+		ExtraModuleNames.AddRange( new string[] { "NAVIS", "NAVIS_Physics", "NAVIS_Water" } );
 	}
 }
