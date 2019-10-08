@@ -81,7 +81,7 @@ private :
 
 						//
 						// Case 0 : All points are over the plane :
-						if (!(I0UnderPlane && I1UnderPlane && I2UnderPlane))
+						if (!I0UnderPlane && !I1UnderPlane && !I2UnderPlane)
 						{
 							continue; // ignore those points
 						}
@@ -96,7 +96,7 @@ private :
 						}
 						//
 						// Case 2 : at least one point is under the plane :
-						else
+						if(I0UnderPlane || I1UnderPlane || I2UnderPlane)
 						{
 							auto Intersection = [&PlaneRelativePosition, &PlaneNormalSafe](const FVector &A, const FVector &B) -> FVector {
 								const FVector Segment = B - A;
@@ -270,17 +270,28 @@ private :
 
 					//
 					// Let's start making faces with the hole
-					TArray<FVector> Left, Right;
-					FVector PreviousSegment = AddedVertices[0];
+					TArray<FVector> Right, Left;
+				
 					// split the array in two and build
-					for (int idx = 1; idx < FGenericPlatformMath::CeilToInt(AddedVertices.Num() / 2.f) - 1; idx++)
+					Right 	= AddedVertices;
+					Left 	= AddedVertices;
+					// should always work
+					Left.RemoveAt((AddedVertices.Num() / 2) +1, FMath::Max(1,(AddedVertices.Num() / 2) -1), true);
+					// not sure about that
+					Right.RemoveAt(0, (AddedVertices.Num() / 2) + 1, true);
+					Algo::Reverse(Right);
+
+
+					for(int idx = 0; idx < FMath::Min(Right.Num(), Left.Num()); idx++)
 					{
-						Left.Add(AddedVertices[idx]);
-						Right.Add(AddedVertices.Last(idx));
-						// this needs to be fixed
-	                    Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Left[idx - 1]), // previous Left
-														    ScaleTransform.TransformPosition(Right[idx - 1]), // current right
-														    ScaleTransform.TransformPosition(Right[idx - 2])); // previous Right
+						if(Right.IsValidIndex(idx+1) && Left.IsValidIndex(idx))
+	                    Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Right[idx]), 
+														    ScaleTransform.TransformPosition(Right[idx+1]), 
+														    ScaleTransform.TransformPosition(Left[idx]));
+						if(idx > 0)
+						Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Right[idx]), 
+														    ScaleTransform.TransformPosition(Left[idx]), 
+														    ScaleTransform.TransformPosition(Left[idx-1]));	
 					}
 				}
 			}
