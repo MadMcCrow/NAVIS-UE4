@@ -81,6 +81,7 @@ struct NAVIS_PHYSICS_API FLiquidSurface : public FNavisPlane
 {
 	GENERATED_BODY()
 protected:
+
 	UPROPERTY()
 	float Density;
 
@@ -88,12 +89,17 @@ public:
 
 	float GetDensity() const { return Density; }
 
+	FLiquidSurface() : FNavisPlane(), Density(1.f) {} // default constructor, necessary
+	FLiquidSurface(const FNavisPlane &in, float density = 1.f) : FNavisPlane(in), Density(density){}
+	FLiquidSurface(const FPlane &in, float density = 1.f) : FNavisPlane(in), Density(density)	{}
+
 };
 
 /**
  * Function used in various physics calculations
  */
-UCLASS(Category = "Physics|Statics") class NAVIS_PHYSICS_API UNAVISPhysicsStatics : public UBlueprintFunctionLibrary
+UCLASS(Category = "Physics|Statics") 
+class NAVIS_PHYSICS_API UNAVISPhysicsStatics : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
@@ -183,6 +189,27 @@ public:
 	 */
 	UFUNCTION()
 	static float GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FNavisPlane &relativePlane);
+
+	/**
+	 * 	GetPlaneFromPointAndNormal()	get a plane from point and a non-null normal
+	 * 	@param location					position of a point on the plane
+	 * 	@param normal					normal of the plane
+ 	 *	@return							Plane according to parameters
+	 */
+	UFUNCTION(BlueprintPure, Category = "Data")
+	static inline FNavisPlane GetPlaneFromPointAndNormal(FVector location, const FVector &normal){return FNavisPlane(location, normal);}
+
+	/**
+	 * 	GetLiquidSurface()				get a plane from point and a non-null normal
+	 * 	@param plane					plane to use for making that surface
+	 * 	@param density					How dense the liquid is (used for friction, forces, etc...)
+ 	 *	@return							FLiquidSurface according to parameters
+	 */
+	UFUNCTION(BlueprintPure, Category = "Data")
+	static inline FLiquidSurface GetLiquidSurface(FPlane plane, float density = 1.f){return FLiquidSurface(plane, 1.f);}
+	static inline FLiquidSurface GetLiquidSurface(FNavisPlane plane, float density = 1.f){return FLiquidSurface(plane, 1.f);}
+
+	
 
 	/**
 	 * 	GetArchimedesForce()			Calculate Force applied to an actor when put in water
