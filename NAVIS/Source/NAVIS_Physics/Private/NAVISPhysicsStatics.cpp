@@ -58,6 +58,9 @@ float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent 
 
 	if (in->BodyInstance.BodySetup.Get())
 		return GetBodySetupVolumeAtLevel(in->BodyInstance.BodySetup.Get(), FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
+	else
+		return GetBodyInstanceVolumeAtLevel(in->BodyInstance, FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
+
 }
 
 float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup *in, const FNavisPlane &relativePlane)
@@ -69,17 +72,17 @@ float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup *in, cons
 	for (auto itr : in->AggGeom.SphereElems)
 		Volume += FNAVISVolumeMath::GetSphereTruncatedVolume(itr, relativePlane.GetPosition(), relativePlane.GetNormal(), Scale);
 	// Box				:
-	for (auto itr : in->AggGeom.SphereElems)
+	for (auto itr : in->AggGeom.BoxElems)
 		Volume += FNAVISVolumeMath::GetBoxTruncatedVolume(itr, relativePlane.GetPosition(), relativePlane.GetNormal(), Scale);
 	// Sphyl			:
-	for (auto itr : in->AggGeom.SphereElems)
+	for (auto itr : in->AggGeom.SphylElems)
 		Volume += FNAVISVolumeMath::GetSphylTruncatedVolume(itr, relativePlane.GetPosition(), relativePlane.GetNormal(), Scale);
 	// Convex			:
 	for (auto itr : in->AggGeom.ConvexElems)
 		Volume += FNAVISVolumeMath::GetConvexTruncatedVolume(itr, relativePlane.GetPosition(), relativePlane.GetNormal(), Scale);
 	// TaperedCapsule	:
-	for (auto itr : in->AggGeom.SphereElems)
-		Volume += FNAVISVolumeMath::GetTaperedCapsuleTruncatedVolume(itr,  relativePlane.GetPosition(), relativePlane.GetNormal(), Scale);
+	for (auto itr : in->AggGeom.TaperedCapsuleElems)
+		Volume += FNAVISVolumeMath::GetTaperedCapsuleTruncatedVolume(itr, relativePlane.GetPosition(), relativePlane.GetNormal(), Scale);
 
 	// Unknown ?
 
@@ -100,22 +103,28 @@ float UNAVISPhysicsStatics::GetBodyInstanceVolumeAtLevel(const FBodyInstance &in
 	return Volume;
 }
 
-FVector UNAVISPhysicsStatics::GetArchimedesForce(const AActor *in, const FLiquidSurface &liquid)
+FVector UNAVISPhysicsStatics::GetArchimedesForce(const AActor *in, const FLiquidSurface &liquidWorldPlane)
 {
 	// We estimate the liquid to be uniform in density, In the real world, sea is not .
-	const FVector direction = -1 * liquidNormal.GetSafeNormal();
+	const FVector direction = -1 * liquidWorldPlane.GetSafeNormal();
 
 	const auto solid = GetActorPrimitive(in);
 	if (!solid)
 		return FVector::ZeroVector;
-<<<<<<< HEAD
+	if(solid->GetBodyInstance())
+	{
+		FBodyInstance solidBodyInst = *solid->GetBodyInstance();
+		const auto volume = GetBodyInstanceVolumeAtLevel(solidBodyInst, FNavisPlane(liquidWorldPlane.GetLocalPosition(solid->GetComponentToWorld()), liquidWorldPlane.GetLocalNormal(solid->GetComponentToWorld())));
+		float forceN = liquidWorldPlane.GetDensity() * volume;
+		return forceN * direction;
+	}
+	if(solid->GetBodySetup())
+	{
+		UBodySetup * solidBodySetup = solid->GetBodySetup();
+		const auto volume = GetBodySetupVolumeAtLevel(solidBodySetup, FNavisPlane(liquidWorldPlane.GetLocalPosition(solid->GetComponentToWorld()), liquidWorldPlane.GetLocalNormal(solid->GetComponentToWorld())));
+		float forceN = liquidWorldPlane.GetDensity() * volume;
+		return forceN * direction;
+	}
 
-	const  FVector liquidRelativePos =  solid->GetComponentToWorld().TransformPosition(liquid.GetPosition());
-	
-	const float volume = GetBodyInstanceVolumeAtLevel(solid->GetBodyInstance(), liquidRelativePos, liquid.GetNormal());
-=======
-	const auto volume = GetBodyInstanceVolumeAtLevel(solid->GetBodyInstance(), liquid.GetLocalGosition(solid.GetComponentToWorld()), liquid.GetLocalNormal(solid.GetComponentToWorld()));
->>>>>>> 07b995fa1aaeff69ae194bae31bf8a2497105e6d
-	float forceN = liquid.GetDensity() * volume;
-	return forceN * direction;
+	return FVector::ZeroVector;
 }

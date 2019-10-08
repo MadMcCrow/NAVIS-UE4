@@ -52,20 +52,15 @@ public:
 		return FVector::PointPlaneProject(location, *this);
 	} 
 
-	inline FVector GetPosition() const { return Position; }
-	inline FVector GetNormal() const { return Normal; }
-
-    inline FVector GetLocalPosition(const FTransform &localToWorld ) const
+    FORCEINLINE FVector GetLocalPosition(const FTransform &localToWorld ) const
     {
         return localToWorld.TransformPosition(GetPosition());
     }
 
-    inline FVector GetLocalNormal(const FTransform &localToWorld ) const
+    FORCEINLINE FVector GetLocalNormal(const FTransform &localToWorld ) const
     {
         return localToWorld.TransformVector(GetNormal());
     }
-
-}
 
 
 	FORCEINLINE FVector GetPlaneOrigin() const 
@@ -90,15 +85,10 @@ protected:
 	float Density;
 
 public:
-<<<<<<< HEAD
+
 	float GetDensity() const { return Density; }
+
 };
-=======
-
-	float GetDensity() const { return Density; }
-
-}
->>>>>>> 07b995fa1aaeff69ae194bae31bf8a2497105e6d
 
 /**
  * Function used in various physics calculations
@@ -197,10 +187,9 @@ public:
 	/**
 	 * 	GetArchimedesForce()			Calculate Force applied to an actor when put in water
 	 * 	@param in						The Actor in Water
-	 *	@param PlaneRelativePosition	Position of a point of the plane in world space, defaulted to world origin
-	 *	@param PlaneNormal				Normal of the cutting plane. since the normal of water is the inverse of gravity, we default to Up (0,0,1)
+	 *	@param WorldPlane				Plane of water in world space
 	 *	@return 						A Force in Newton stored in a world vector
 	 */
 	UFUNCTION(BlueprintPure, Category = "Force")
-	static FVector GetArchimedesForce(const AActor *in, const FNavisPlane &relativePlane);
+	static FVector GetArchimedesForce(const AActor *in, const FLiquidSurface &liquidWorldPlane);
 };

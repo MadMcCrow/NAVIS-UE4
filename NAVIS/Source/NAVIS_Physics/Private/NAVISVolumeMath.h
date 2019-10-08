@@ -372,7 +372,7 @@ public:
 		FVector BoxDimension = FVector(BoxElement.X * 2, BoxElement.Y * 2, BoxElement.Z * 2);
 		FVector PlaneBoxPos = PlaneRelativePosition - BoxScale;
 		//const float Alpha = 
-
+		const FVector NormalizedPlaneNormal = PlaneNormal.GetSafeNormal();
 		// now we can work in a 1:1:1 scale for the plane 
 		const FTransform PlaneTransform = FTransform(UKismetMathLibrary::MakeRotFromZ(NormalizedPlaneNormal), PlaneBoxPos,  BoxScale);
 		float Volume = 0.f;
