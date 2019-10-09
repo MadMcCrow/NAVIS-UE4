@@ -11,6 +11,7 @@
 	//#include "PhysicsEngine/PhysXSupport.h" // not necessary
 #endif // WITH_PHYSX
 
+#define FANALGO 0
 
 /** 
  *	FNAVISVolumeMath struct used as a namespace to hold all functions related to Volume calculation in NAVIS
@@ -268,6 +269,16 @@ private :
 					if (bInvert)
 						Algo::Reverse(AddedVertices);
 
+
+					#if FANALGO
+					for(int idx = 1; idx < AddedVertices.Num() -1; idx++)
+					{
+						Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(AddedVertices[0]), 
+														    ScaleTransform.TransformPosition(AddedVertices[idx]), 
+														    ScaleTransform.TransformPosition(AddedVertices[idx+1]));		
+					}
+					#endif // FANALGO
+					#if !FANALGO
 					//
 					// Let's start making faces with the hole
 					TArray<FVector> Right, Left;
@@ -275,10 +286,12 @@ private :
 					// split the array in two and build
 					Right 	= AddedVertices;
 					Left 	= AddedVertices;
+					const auto N =  AddedVertices.Num();
+					const auto n = FMath::Max(1,(N/2));
 					// should always work
-					Left.RemoveAt((AddedVertices.Num() / 2) +1, FMath::Max(1,(AddedVertices.Num() / 2) -1), true);
+					Left.RemoveAt(N - (N / 2) , n, true);
 					// not sure about that
-					Right.RemoveAt(0, (AddedVertices.Num() / 2) + 1, true);
+					Right.RemoveAt(0, n, true);
 					Algo::Reverse(Right);
 
 
@@ -293,6 +306,7 @@ private :
 														    ScaleTransform.TransformPosition(Left[idx]), 
 														    ScaleTransform.TransformPosition(Left[idx-1]));	
 					}
+					#endif //FANALGO
 				}
 			}
 		}

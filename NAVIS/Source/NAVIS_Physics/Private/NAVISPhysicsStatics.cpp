@@ -55,7 +55,7 @@ float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent 
 		return 0.f;
 
 	float Volume = 0.f;
-	const FVector PlaneRelativePosition = in->GetComponentToWorld().TransformPosition(worldPlane.GetPosition());
+	const FVector PlaneRelativePosition = in->GetComponentToWorld().InverseTransformPosition(worldPlane.GetPosition());
 
 	if (in->BodyInstance.BodySetup.Get())
 		Volume =  GetBodySetupVolumeAtLevel(in->BodyInstance.BodySetup.Get(), FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
