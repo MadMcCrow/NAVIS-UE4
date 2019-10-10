@@ -42,11 +42,16 @@ float UNAVISPhysicsStatics::GetActorVolume(const AActor *in)
 
 float UNAVISPhysicsStatics::GetPrimitiveVolume(const UPrimitiveComponent *in)
 {
+
 	if (!in)
 		return 0.f;
 	if (!in->BodyInstance.BodySetup.IsValid())
 		return 0.f;
-	return in->BodyInstance.BodySetup.Get()->GetVolume(FVector::OneVector);
+	float Volume = 0.f;
+	for (auto itr : in->BodyInstance.BodySetup.Get()->AggGeom.ConvexElems)
+		Volume += itr.GetVolume(FVector::OneVector);
+	return Volume;
+	//GetVolume(FVector::OneVector);
 }
 
 float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent *in, const FNavisPlane &worldPlane)

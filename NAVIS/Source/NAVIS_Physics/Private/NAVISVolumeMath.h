@@ -110,8 +110,7 @@ private :
 							};
 
 							// we will always have two cuts
-							FVector CutA,
-								 CutB;
+							FVector CutA, CutB;
 
 							// we call alpha a cut in (v0, v1) and (v0, v2) with 0 under, and neg-alpha when 0 is over
 							// we call beta a cut in (v0, v1) and (v1, v2) with 1 under, and neg-beta when 1 is over
@@ -155,13 +154,13 @@ private :
 								else // neg alpha
 								{
 									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(CutA),
-																	 ScaleTransform.TransformPosition(V1));
+									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V1),
+																	 ScaleTransform.TransformPosition(V2),
+																	 ScaleTransform.TransformPosition(CutA));
 
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(V1),
-																	 ScaleTransform.TransformPosition(V2));
+									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutA),
+																	 ScaleTransform.TransformPosition(V2),
+																	 ScaleTransform.TransformPosition(CutB));
 								}
 							}
 							break;
@@ -197,10 +196,10 @@ private :
 								CutB = Intersection(V2, V1);
 								if (I2UnderPlane)
 								{
-									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V2),
+									AddVertices(CutA, CutB);
+									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutA),
 																	 ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(CutA));
+																	 ScaleTransform.TransformPosition(V2));
 								}
 								else // neg gamma
 								{
@@ -209,8 +208,8 @@ private :
 																	 ScaleTransform.TransformPosition(V1),
 																	 ScaleTransform.TransformPosition(CutB));
 
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(V1),
+									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V0),
+																	 ScaleTransform.TransformPosition(CutB),
 																	 ScaleTransform.TransformPosition(CutA));
 								}
 							}
@@ -278,7 +277,7 @@ private :
 														    ScaleTransform.TransformPosition(AddedVertices[idx+1]));		
 					}
 					#endif // FANALGO
-					#if !FANALGO
+					#if FANALGO
 					//
 					// Let's start making faces with the hole
 					TArray<FVector> Right, Left;
