@@ -52,15 +52,17 @@ float UNAVISPhysicsStatics::GetPrimitiveVolume(const UPrimitiveComponent *in)
 float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent *in, const FNavisPlane &worldPlane)
 {
 	if (!in)
-		return 0.f;
+		return -1.f;
 
 	const FVector PlaneRelativePosition = in->GetComponentToWorld().TransformPosition(worldPlane.GetPosition());
 
-	if (in->BodyInstance.BodySetup.Get())
+	float Volume = GetBodyInstanceVolumeAtLevel(in->BodyInstance, FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
+	if (Volume >= 0) // no error Volume != -1
+		return Volume; 
+	if(in->BodyInstance.BodySetup.Get())
 		return GetBodySetupVolumeAtLevel(in->BodyInstance.BodySetup.Get(), FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
-	else
-		return GetBodyInstanceVolumeAtLevel(in->BodyInstance, FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
-
+		
+	return -1.f;
 }
 
 float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup *in, const FNavisPlane &relativePlane)
@@ -91,7 +93,7 @@ float UNAVISPhysicsStatics::GetBodySetupVolumeAtLevel(const UBodySetup *in, cons
 
 float UNAVISPhysicsStatics::GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FNavisPlane &relativePlane)
 {
-	float Volume = 0.f;
+	float Volume = -1.f;
 	TArray<FPhysicsShapeHandle> Shapes;
 
 	in.GetAllShapes_AssumesLocked(Shapes);

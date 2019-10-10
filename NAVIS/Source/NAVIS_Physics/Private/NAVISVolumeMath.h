@@ -33,7 +33,7 @@ private :
 	// GetPhysXConvexTruncatedVolume()	works for all convex meshes as all are using physx Convex mesh
 	static float GetPhysXConvexTruncatedVolume(physx::PxConvexMesh * ConvexMesh, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
-		float Volume = 0.0f;
+		float Volume = -1.0f;
 		
 		const FVector PlaneNormalSafe = (PlaneNormal.Size() == 0.f) ? FVector::UpVector : PlaneNormal.GetUnsafeNormal();
 		if (ConvexMesh != NULL )
@@ -230,7 +230,8 @@ private :
 						}
 
 					} // end of for (int32 VertIdx = 2; VertIdx < PolyData.mNbVerts; ++ VertIdx)
-
+				} // if (ConvexMesh->getPolygonData(PolyIdx, PolyData))
+			} // for (int32 PolyIdx = 0; PolyIdx < NumPolys; ++PolyIdx)
 					// If we dont have any points next step makes no sens
 					if (!AddedVertices.IsValidIndex(0))
 						return Volume;
@@ -282,8 +283,6 @@ private :
 														    ScaleTransform.TransformPosition(Right[idx - 1]), // current right
 														    ScaleTransform.TransformPosition(Right[idx - 2])); // previous Right
 					}
-				}
-			}
 		}
 		return Volume;
 	}
@@ -300,7 +299,7 @@ public:
 		auto pxConvex = ConvexElement.GetConvexMesh();
 		return GetPhysXConvexTruncatedVolume(pxConvex, PlaneRelativePosition, PlaneNormal, Scale);
 	#endif // WITH_PHYSX
-		return 0.f;
+		return -1.f;
 	}
 
 	/** 
