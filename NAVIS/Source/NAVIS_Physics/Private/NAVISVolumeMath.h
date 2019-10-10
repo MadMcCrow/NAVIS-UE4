@@ -11,6 +11,7 @@
 	//#include "PhysicsEngine/PhysXSupport.h" // not necessary
 #endif // WITH_PHYSX
 
+#define FANALGO 0
 
 /** 
  *	FNAVISVolumeMath struct used as a namespace to hold all functions related to Volume calculation in NAVIS
@@ -81,7 +82,7 @@ private :
 
 						//
 						// Case 0 : All points are over the plane :
-						if (!(I0UnderPlane && I1UnderPlane && I2UnderPlane))
+						if (!I0UnderPlane && !I1UnderPlane && !I2UnderPlane)
 						{
 							continue; // ignore those points
 						}
@@ -96,7 +97,7 @@ private :
 						}
 						//
 						// Case 2 : at least one point is under the plane :
-						else
+						if(I0UnderPlane || I1UnderPlane || I2UnderPlane)
 						{
 							auto Intersection = [&PlaneRelativePosition, &PlaneNormalSafe](const FVector &A, const FVector &B) -> FVector {
 								const FVector Segment = B - A;
@@ -109,8 +110,7 @@ private :
 							};
 
 							// we will always have two cuts
-							FVector CutA,
-								 CutB;
+							FVector CutA, CutB;
 
 							// we call alpha a cut in (v0, v1) and (v0, v2) with 0 under, and neg-alpha when 0 is over
 							// we call beta a cut in (v0, v1) and (v1, v2) with 1 under, and neg-beta when 1 is over
@@ -154,13 +154,13 @@ private :
 								else // neg alpha
 								{
 									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(CutA),
-																	 ScaleTransform.TransformPosition(V1));
+									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V1),
+																	 ScaleTransform.TransformPosition(V2),
+																	 ScaleTransform.TransformPosition(CutA));
 
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(V1),
-																	 ScaleTransform.TransformPosition(V2));
+									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutA),
+																	 ScaleTransform.TransformPosition(V2),
+																	 ScaleTransform.TransformPosition(CutB));
 								}
 							}
 							break;
@@ -196,10 +196,10 @@ private :
 								CutB = Intersection(V2, V1);
 								if (I2UnderPlane)
 								{
-									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V2),
+									AddVertices(CutA, CutB);
+									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutA),
 																	 ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(CutA));
+																	 ScaleTransform.TransformPosition(V2));
 								}
 								else // neg gamma
 								{
@@ -208,8 +208,8 @@ private :
 																	 ScaleTransform.TransformPosition(V1),
 																	 ScaleTransform.TransformPosition(CutB));
 
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(V1),
+									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V0),
+																	 ScaleTransform.TransformPosition(CutB),
 																	 ScaleTransform.TransformPosition(CutA));
 								}
 							}
@@ -268,20 +268,44 @@ private :
 					if (bInvert)
 						Algo::Reverse(AddedVertices);
 
+
+					#if FANALGO
+					for(int idx = 1; idx < AddedVertices.Num() -1; idx++)
+					{
+						Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(AddedVertices[0]), 
+														    ScaleTransform.TransformPosition(AddedVertices[idx]), 
+														    ScaleTransform.TransformPosition(AddedVertices[idx+1]));		
+					}
+					#endif // FANALGO
+					#if FANALGO
 					//
 					// Let's start making faces with the hole
-					TArray<FVector> Left, Right;
-					FVector PreviousSegment = AddedVertices[0];
+					TArray<FVector> Right, Left;
+				
 					// split the array in two and build
-					for (int idx = 1; idx < FGenericPlatformMath::CeilToInt(AddedVertices.Num() / 2.f) - 1; idx++)
+					Right 	= AddedVertices;
+					Left 	= AddedVertices;
+					const auto N =  AddedVertices.Num();
+					const auto n = FMath::Max(1,(N/2));
+					// should always work
+					Left.RemoveAt(N - (N / 2) , n, true);
+					// not sure about that
+					Right.RemoveAt(0, n, true);
+					Algo::Reverse(Right);
+
+
+					for(int idx = 0; idx < FMath::Min(Right.Num(), Left.Num()); idx++)
 					{
-						Left.Add(AddedVertices[idx]);
-						Right.Add(AddedVertices.Last(idx));
-						// this needs to be fixed
-	                    Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Left[idx - 1]), // previous Left
-														    ScaleTransform.TransformPosition(Right[idx - 1]), // current right
-														    ScaleTransform.TransformPosition(Right[idx - 2])); // previous Right
+						if(Right.IsValidIndex(idx+1) && Left.IsValidIndex(idx))
+	                    Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Right[idx]), 
+														    ScaleTransform.TransformPosition(Right[idx+1]), 
+														    ScaleTransform.TransformPosition(Left[idx]));
+						if(idx > 0)
+						Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Right[idx]), 
+														    ScaleTransform.TransformPosition(Left[idx]), 
+														    ScaleTransform.TransformPosition(Left[idx-1]));	
 					}
+					#endif //FANALGO
 				}
 			}
 		}

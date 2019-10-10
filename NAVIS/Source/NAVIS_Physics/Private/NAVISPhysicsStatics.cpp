@@ -42,11 +42,16 @@ float UNAVISPhysicsStatics::GetActorVolume(const AActor *in)
 
 float UNAVISPhysicsStatics::GetPrimitiveVolume(const UPrimitiveComponent *in)
 {
+
 	if (!in)
 		return 0.f;
 	if (!in->BodyInstance.BodySetup.IsValid())
 		return 0.f;
-	return in->BodyInstance.BodySetup.Get()->GetVolume(FVector::OneVector);
+	float Volume = 0.f;
+	for (auto itr : in->BodyInstance.BodySetup.Get()->AggGeom.ConvexElems)
+		Volume += itr.GetVolume(FVector::OneVector);
+	return Volume;
+	//GetVolume(FVector::OneVector);
 }
 
 float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent *in, const FNavisPlane &worldPlane)
@@ -54,12 +59,14 @@ float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent 
 	if (!in)
 		return 0.f;
 
-	const FVector PlaneRelativePosition = in->GetComponentToWorld().TransformPosition(worldPlane.GetPosition());
+	float Volume = 0.f;
+	const FVector PlaneRelativePosition = in->GetComponentToWorld().InverseTransformPosition(worldPlane.GetPosition());
 
 	if (in->BodyInstance.BodySetup.Get())
-		return GetBodySetupVolumeAtLevel(in->BodyInstance.BodySetup.Get(), FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
-	else
-		return GetBodyInstanceVolumeAtLevel(in->BodyInstance, FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
+		Volume =  GetBodySetupVolumeAtLevel(in->BodyInstance.BodySetup.Get(), FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
+	if(Volume == 0.f)
+		Volume =  GetBodyInstanceVolumeAtLevel(in->BodyInstance, FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
+	return Volume;
 
 }
 
