@@ -21,38 +21,48 @@ private :
 	// typedef for more readability
 	typedef TPair<FVector,FVector> FSegment;
 
-	// @see Engine\Source\Runtime\Engine\Private\PhysicsEngine\BodySetup.cpp
-	// http://amp.ece.cmu.edu/Publication/Cha/icip01_Cha.pdf
-	// http://stackoverflow.com/questions/1406029/how-to-calculate-the-volume-of-a-3d-mesh-object-the-surface-of-which-is-made-up
-	static float SignedVolumeOfTriangle(const FVector& p1, const FVector& p2, const FVector& p3) 
+
+	static float TetrahedronVolume(const FVector& p1, const FVector& p2, const FVector& p3 ,const FVector& p4) 
 	{
-		return FVector::DotProduct(p1, FVector::CrossProduct(p2, p3)) / 6.0f;
+		return FVector::DotProduct(p1 - p4, FVector::CrossProduct(p2 - p4, p3 - p4)) / 6.0f;
 	}
 
 #if WITH_PHYSX
 	// GetPhysXConvexTruncatedVolume()	works for all convex meshes as all are using physx Convex mesh
-	static float GetPhysXConvexTruncatedVolume(physx::PxConvexMesh * ConvexMesh, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
+	static float GetPhysXConvexTruncatedVolume(physx::PxConvexMesh * convexMesh, const FPlane &cuttingPlane, const FVector& scale)
 	{
 		float Volume = -1.0f;
 		
-		const FVector PlaneNormalSafe = (PlaneNormal.Size() == 0.f) ? FVector::UpVector : PlaneNormal.GetUnsafeNormal();
-		if (ConvexMesh != NULL )
+		
+		if (convexMesh != NULL )
 		{
 			// Preparation for convex mesh scaling implemented in another changelist
-			FTransform ScaleTransform = FTransform(FQuat::Identity, FVector::ZeroVector, Scale);
+			FTransform ScaleTransform = FTransform(FQuat::Identity, FVector::ZeroVector, scale);
 
-			int32 NumPolys = ConvexMesh->getNbPolygons();
+
+			int32 NumPolys = convexMesh->getNbPolygons();
 			PxHullPolygon PolyData;
 
-			const PxVec3 *Vertices = ConvexMesh->getVertices();
-			const PxU8 *Indices = ConvexMesh->getIndexBuffer();
+			const PxVec3 *Vertices = convexMesh->getVertices();
+			const PxU8 *Indices = convexMesh->getIndexBuffer();
 
 			TArray<FVector>	AddedVertices;
-			TArray<FSegment> AddedSegments;
+		
+			// extracting plane info
+			const FVector PlaneUp = FVector(cuttingPlane.X, cuttingPlane.Y, cuttingPlane.Z);
+			const float ratio = PlaneUp.Size() != 0.f ? PlaneUp.Size() : 1;
+			const FVector PlaneNormal = PlaneUp / ratio;
+			const FVector PlaneRelativePosition = (cuttingPlane.W / ratio) * PlaneNormal;
+			const FPlane Plane = FPlane(PlaneRelativePosition, PlaneNormal);
 
+			// finding object center on plane
+			auto bounds = convexMesh->getLocalBounds();
+			FVector Center = P2UVector(bounds.getCenter());
+			const FVector PlaneObjectCenter = FVector::PointPlaneProject(Center,Plane); 
+			
 			for (int32 PolyIdx = 0; PolyIdx < NumPolys; ++PolyIdx)
 			{
-				if (ConvexMesh->getPolygonData(PolyIdx, PolyData))
+				if (convexMesh->getPolygonData(PolyIdx, PolyData))
 				{
 					for (int32 VertIdx = 2; VertIdx < PolyData.mNbVerts; ++VertIdx)
 					{
@@ -60,18 +70,19 @@ private :
 						int32 I0 = Indices[PolyData.mIndexBase + 0];
 						int32 I1 = Indices[PolyData.mIndexBase + (VertIdx - 1)];
 						int32 I2 = Indices[PolyData.mIndexBase + VertIdx];
-
+					
 						//
 						// We have to determine if our points are under our plane or not
-						auto IsUnderPlane = [&PlaneRelativePosition, &PlaneNormalSafe](const FVector &Position) -> bool {
+						auto IsUnderPlane = [&PlaneRelativePosition, &PlaneNormal](const FVector &Position) -> bool {
 							const FVector Orient = Position - PlaneRelativePosition;
-							return FVector::DotProduct(Orient, PlaneNormalSafe) < 0;
+							return FVector::DotProduct(Orient, PlaneNormal) < 0;
 						};
 
-						const FVector V0 = P2UVector(Vertices[I0]);
-						const FVector V1 = P2UVector(Vertices[I1]);
-						const FVector V2 = P2UVector(Vertices[I2]);
-
+						const FVector V0 = ScaleTransform.TransformPosition(P2UVector(Vertices[I0]));
+						const FVector V1 = ScaleTransform.TransformPosition(P2UVector(Vertices[I1]));
+						const FVector V2 = ScaleTransform.TransformPosition(P2UVector(Vertices[I2]));
+						const FVector V3 = ScaleTransform.TransformPosition(PlaneObjectCenter);
+	
 						const bool I0UnderPlane = IsUnderPlane(V0);
 						const bool I1UnderPlane = IsUnderPlane(V1);
 						const bool I2UnderPlane = IsUnderPlane(V2);
@@ -81,7 +92,7 @@ private :
 
 						//
 						// Case 0 : All points are over the plane :
-						if (!(I0UnderPlane && I1UnderPlane && I2UnderPlane))
+						if (!I0UnderPlane && !I1UnderPlane && !I2UnderPlane)
 						{
 							continue; // ignore those points
 						}
@@ -89,201 +100,93 @@ private :
 						// Case 1 : All points are below the plane :
 						if (I0UnderPlane && I1UnderPlane && I2UnderPlane)
 						{
-							Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V0),
-															 ScaleTransform.TransformPosition(V1),
-															 ScaleTransform.TransformPosition(V2));
+							Volume += TetrahedronVolume(V0,V1,V2,V3);
 							continue;
 						}
 						//
 						// Case 2 : at least one point is under the plane :
-						else
+						if(I0UnderPlane || I1UnderPlane || I2UnderPlane)
 						{
-							auto Intersection = [&PlaneRelativePosition, &PlaneNormalSafe](const FVector &A, const FVector &B) -> FVector {
+							auto Intersection = [&PlaneRelativePosition, &PlaneNormal](const FVector &A, const FVector &B) -> FVector {
 								const FVector Segment = B - A;
 								if (Segment.Size() == 0)
 									return A;
 								const FVector NSegment = Segment.GetUnsafeNormal();
 								const FVector PlaneToA = A - PlaneRelativePosition;
-								float S = FVector::DotProduct(PlaneNormalSafe, PlaneToA) / FVector::DotProduct(PlaneNormalSafe, NSegment);
+								float S = FVector::DotProduct(PlaneNormal, PlaneToA) / FVector::DotProduct(PlaneNormal, NSegment);
 								return NSegment * S;
 							};
 
 							// we will always have two cuts
-							FVector CutA,
-								 CutB;
+							FVector CutA, CutB;
 
-							// we call alpha a cut in (v0, v1) and (v0, v2) with 0 under, and neg-alpha when 0 is over
-							// we call beta a cut in (v0, v1) and (v1, v2) with 1 under, and neg-beta when 1 is over
-							// we call gamma a cut in (v0, v2) and (v2, v1) with 2 under, and neg-gamma when 2 is over
-
-							enum ECutCase
-							{
-								alpha,
-								beta,
-								gamma,
-								error
-							};
-
-							ECutCase CutCase = ECutCase::error;
-							if ((I0UnderPlane && (!I1UnderPlane && !I2UnderPlane)) || (I1UnderPlane && I2UnderPlane && !I0UnderPlane))
-								CutCase = ECutCase::alpha;
-							else if ((I1UnderPlane && (!I0UnderPlane && !I2UnderPlane)) || (I0UnderPlane && I2UnderPlane && !I1UnderPlane))
-								CutCase = ECutCase::beta;
-							else if ((I2UnderPlane && (!I0UnderPlane && !I1UnderPlane)) || (I1UnderPlane && I0UnderPlane && !I2UnderPlane))
-								CutCase = ECutCase::gamma;
-
-							auto AddVertices = [&AddedSegments, &AddedVertices](FVector &A, FVector &B) {
-								AddedSegments.Add(FSegment(A, B));
+							auto AddVertices = [&AddedVertices](FVector &A, FVector &B) {
 								AddedVertices.AddUnique(A);
 								AddedVertices.AddUnique(B);
-							};
+								};
 
-							switch (CutCase)
-							{
-							case ECutCase::alpha:
+	
+							if ((I0UnderPlane && (!I1UnderPlane && !I2UnderPlane)) || (I1UnderPlane && I2UnderPlane && !I0UnderPlane))
 							{
 								CutA = Intersection(V0, V1);
 								CutB = Intersection(V0, V2);
 								if (I0UnderPlane)
 								{
 									AddVertices(CutA, CutB);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V0),
-																	 ScaleTransform.TransformPosition(CutA),
-																	 ScaleTransform.TransformPosition(CutB));
+									Volume += TetrahedronVolume(V0, CutA, CutB, V3);
 								}
 								else // neg alpha
 								{
 									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(CutA),
-																	 ScaleTransform.TransformPosition(V1));
-
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(V1),
-																	 ScaleTransform.TransformPosition(V2));
+									Volume += TetrahedronVolume(V1, V2, CutA, V3);
+									Volume += TetrahedronVolume(CutA, V2, CutB, V3);
 								}
 							}
-							break;
-
-							case ECutCase::beta:
+							
+							else if ((I1UnderPlane && (!I0UnderPlane && !I2UnderPlane)) || (I0UnderPlane && I2UnderPlane && !I1UnderPlane))
 							{
 								CutA = Intersection(V1, V0);
 								CutB = Intersection(V1, V2);
 								if (I1UnderPlane)
 								{
 									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutA),
-																	 ScaleTransform.TransformPosition(V1),
-																	 ScaleTransform.TransformPosition(CutB));
+									Volume += TetrahedronVolume(CutA, V1, CutB, V3);
 								}
 								else // neg beta
 								{
 									AddVertices(CutA, CutB);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V0),
-																	 ScaleTransform.TransformPosition(CutA),
-																	 ScaleTransform.TransformPosition(V2));
-
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutA),
-																	 ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(V2));
+									Volume += TetrahedronVolume(V0, CutA, V2, V3);
+									Volume += TetrahedronVolume(CutA, CutB, V2, V3);
 								}
 							}
-							break;
-
-							case ECutCase::gamma:
+							else if ((I2UnderPlane && (!I0UnderPlane && !I1UnderPlane)) || (I1UnderPlane && I0UnderPlane && !I2UnderPlane))
 							{
 								CutA = Intersection(V2, V0);
 								CutB = Intersection(V2, V1);
 								if (I2UnderPlane)
 								{
-									AddVertices(CutB, CutA);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V2),
-																	 ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(CutA));
+									AddVertices(CutA, CutB);
+									Volume += TetrahedronVolume(CutA, CutB, V2, V3);
 								}
 								else // neg gamma
 								{
 									AddVertices(CutA, CutB);
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V0),
-																	 ScaleTransform.TransformPosition(V1),
-																	 ScaleTransform.TransformPosition(CutB));
-
-									Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(CutB),
-																	 ScaleTransform.TransformPosition(V1),
-																	 ScaleTransform.TransformPosition(CutA));
+									Volume += TetrahedronVolume(V0, V1, CutB, V3);
+									Volume += TetrahedronVolume(V0, CutB, CutA, V3);
 								}
 							}
-							break;
-							default:
-							case ECutCase::error:
+							else
 							{
 								UE_LOG(LogNAVIS_Physics, Error, TEXT("wrong cut, not possible"));
-								Volume += SignedVolumeOfTriangle(ScaleTransform.TransformPosition(V0),
-																 ScaleTransform.TransformPosition(V1),
-																 ScaleTransform.TransformPosition(V2));
+								Volume += TetrahedronVolume(V0,V1,V2,V3);
 								continue;
 							}
-							break;
-							}
-
-							// this is all for the cutting part
 						}
 
 					} // end of for (int32 VertIdx = 2; VertIdx < PolyData.mNbVerts; ++ VertIdx)
 				} // if (ConvexMesh->getPolygonData(PolyIdx, PolyData))
 			} // for (int32 PolyIdx = 0; PolyIdx < NumPolys; ++PolyIdx)
-					// If we dont have any points next step makes no sens
-					if (!AddedVertices.IsValidIndex(0))
-						return Volume;
-
-					// find iso-centroid
-					FVector centroid = FVector::ZeroVector;
-					for (auto point : AddedVertices)
-						centroid += point;
-					centroid /= AddedVertices.Num();
-
-					auto Ref = AddedVertices[0];
-					//
-					// Sort Vertices by orientation, this is only possible because we're in a convex shape
-					AddedVertices.Sort([&PlaneNormal, &centroid, &Ref](const FVector &A, const FVector &B) {
-						if (A == Ref)
-							return true;
-						if (B == Ref)
-							return false;
-						const auto D = FVector::CrossProduct(A - centroid, B - centroid);
-						return FVector::DotProduct(D, PlaneNormal) < 0.f;
-					});
-
-					// we need to make sure the array is in correct order compared to stored segments
-					// this could be parrallelized
-					bool bInvert = false;
-					for (int idx = 1; idx < AddedVertices.Num(); idx++)
-					{
-						if (AddedSegments.Find(FSegment(AddedVertices[idx - 1], AddedVertices[idx])) != INDEX_NONE)
-						{
-							bInvert = true;
-							break;
-						}
-					}
-
-					if (bInvert)
-						Algo::Reverse(AddedVertices);
-
-					//
-					// Let's start making faces with the hole
-					TArray<FVector> Left, Right;
-					FVector PreviousSegment = AddedVertices[0];
-					// split the array in two and build
-					for (int idx = 1; idx < FGenericPlatformMath::CeilToInt(AddedVertices.Num() / 2.f) - 1; idx++)
-					{
-						Left.Add(AddedVertices[idx]);
-						Right.Add(AddedVertices.Last(idx));
-						// this needs to be fixed
-	                    Volume += SignedVolumeOfTriangle(	ScaleTransform.TransformPosition(Left[idx - 1]), // previous Left
-														    ScaleTransform.TransformPosition(Right[idx - 1]), // current right
-														    ScaleTransform.TransformPosition(Right[idx - 2])); // previous Right
-					}
-		}
+		} // if (ConvexMesh != NULL )
 		return Volume;
 	}
 #endif // WITH_PHYSX
@@ -297,7 +200,7 @@ public:
 	{	
 	#if WITH_PHYSX
 		auto pxConvex = ConvexElement.GetConvexMesh();
-		return GetPhysXConvexTruncatedVolume(pxConvex, PlaneRelativePosition, PlaneNormal, Scale);
+		return GetPhysXConvexTruncatedVolume(pxConvex, FPlane(PlaneRelativePosition, PlaneNormal), Scale);
 	#endif // WITH_PHYSX
 		return -1.f;
 	}
@@ -413,7 +316,7 @@ public:
 				PhysXElement.Shape->getConvexMeshGeometry(Convex);
 				if(Convex.isValid() && Convex.convexMesh)
 				{
-					Volume = GetPhysXConvexTruncatedVolume(Convex.convexMesh, PlaneRelativePosition, PlaneNormal, Scale);
+					Volume = GetPhysXConvexTruncatedVolume(Convex.convexMesh, FPlane(PlaneRelativePosition, PlaneNormal), Scale);
 				}
 			}
 			break;
