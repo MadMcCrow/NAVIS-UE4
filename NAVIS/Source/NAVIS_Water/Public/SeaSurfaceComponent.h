@@ -44,12 +44,12 @@ protected:
      *  RenderTargetDimension   How precise our render target shall be
      *  @note   	           We might want to make this non static to be allowed to change resolution dynamically
      */
-    static struct FRenderTargetDimension : uint32
+    static struct FRenderTargetDimension 
     {
         uint16 X;
         uint16 Y; 
         FRenderTargetDimension(uint16 newX, uint16 newY ) : X(newX), Y(newY) {}
-    }RenderTargetDimension;
+    }RenderTargetDimension; //: uint32
 
 private :
 

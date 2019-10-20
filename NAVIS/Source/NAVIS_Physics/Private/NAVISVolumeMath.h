@@ -1,14 +1,15 @@
 // Noe Perard-Gayot <noe.perard@gmail.com> 2019 - All Rights Reserved
 
+#pragma once
+ 
 #include "NAVIS_PhysicsPCH.h"
-#include "Algo/Reverse.h"						 // to reverse TArray
 #include "GenericPlatform/GenericPlatformMath.h" // To ceil
 #include "Kismet/KismetMathLibrary.h"
-#include "PhysXCookHelper.h" // PhysX
+
 
 #if WITH_PHYSX
+	#include "PhysXCookHelper.h" // PhysX
 	#include "PhysXPublic.h"
-	//#include "PhysicsEngine/PhysXSupport.h" // not necessary
 #endif // WITH_PHYSX
 
 
@@ -113,7 +114,7 @@ private :
 									return A;
 								const FVector NSegment = Segment.GetUnsafeNormal();
 								const FVector PlaneToA = A - PlaneRelativePosition;
-								float S = FVector::DotProduct(PlaneNormal, PlaneToA) / FVector::DotProduct(PlaneNormal, NSegment);
+								const float S = FVector::DotProduct(PlaneNormal, PlaneToA) / FVector::DotProduct(PlaneNormal, NSegment);
 								return NSegment * S;
 							};
 
@@ -214,11 +215,11 @@ public:
 		float Volume = 0.f;
 
 
-		float Radius = SphereElement.Radius * Scale.GetMin();
+		const float Radius = SphereElement.Radius * Scale.GetMin();
 		
 		//we first need to se ethe sphere in the Plane local space
 		const FVector NormalizedPlaneNormal =  PlaneNormal.GetSafeNormal();
-		FRotator PlaneOrientation =  UKismetMathLibrary::MakeRotFromZ(NormalizedPlaneNormal);
+		const FRotator PlaneOrientation =  UKismetMathLibrary::MakeRotFromZ(NormalizedPlaneNormal);
 		// get the plane transform
 		const FTransform PlaneTrans = FTransform(PlaneOrientation, PlaneRelativePosition, FVector::OneVector);
 		
@@ -266,20 +267,20 @@ public:
 	static float GetBoxTruncatedVolume(const FKBoxElem &BoxElement, const FVector &PlaneRelativePosition, const FVector &PlaneNormal, const FVector& Scale)
 	{
 		UE_LOG(LogNAVIS_Physics, Error, TEXT("box not implemented"));
-
+#if 0
 		// first find a scale that turn the cuboid into a real cube :
-		FVector BoxScale = FVector(BoxElement.X, BoxElement.Y, BoxElement.Z);
+		const FVector BoxScale = FVector(BoxElement.X, BoxElement.Y, BoxElement.Z);
 
 		// we consider the box in 0.0; with extend only in the positive 
 		FVector BoxDimension = FVector(BoxElement.X * 2, BoxElement.Y * 2, BoxElement.Z * 2);
-		FVector PlaneBoxPos = PlaneRelativePosition - BoxScale;
+		const FVector PlaneBoxPos = PlaneRelativePosition - BoxScale;
 		//const float Alpha = 
 		const FVector NormalizedPlaneNormal = PlaneNormal.GetSafeNormal();
 		// now we can work in a 1:1:1 scale for the plane 
 		const FTransform PlaneTransform = FTransform(UKismetMathLibrary::MakeRotFromZ(NormalizedPlaneNormal), PlaneBoxPos,  BoxScale);
-		float Volume = 0.f;
-	
-		return Volume;
+		const float Volume = 0.f;
+#endif
+		return 0.f;
 	}
 
 	/** 

@@ -36,16 +36,16 @@ void ASeaActor::ApplyExtent(const FVector2D &newExtent)
     VolumeComp->SetRelativeLocation(FVector(0.f,0.f, -1.f * depth));
 
 	//FVector Origin = SurfaceComp->Bounds.Origin;
-	FVector	BoxExtent = SurfaceComp->Bounds.BoxExtent;
+	const FVector	BoxExtent = SurfaceComp->Bounds.BoxExtent;
     SurfaceComp->SetRelativeScale3D(Extent3d / BoxExtent);
 }
 
 void ASeaActor::OnEnterVolume( UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool bFromSweep, const FHitResult & sweepResult)
 {
-    Event_OnActorEnteredVolume(OtherActor);
+    Event_OnActorEnteredVolume(otherActor);
 }
 
 void ASeaActor::OnLeaveVolume( UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex)
 {
-    Event_OnActorLeftVolume(OtherActor);
+    Event_OnActorLeftVolume(otherActor);
 }

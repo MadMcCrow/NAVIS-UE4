@@ -5,6 +5,8 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "NAVISPhysicsStatics.generated.h"
 
+// struct FBodyInstance; sould no be necessary for UE4
+class UBodySetup;
 class AActor;
 
 USTRUCT()
@@ -28,7 +30,7 @@ public:
 		if(SquareSum != 0.f && SquareSum != 1.f)
 		{
 			const float scale = FMath::InvSqrt(SquareSum);
-			return FVector(X*SquareSum, Y*SquareSum, Z*SquareSum);
+			return FVector(X* scale, Y* scale, Z*scale);
 		}
 		return FVector(X, Y, Z);
 	}
@@ -214,7 +216,7 @@ public:
 	/**
 	 * 	GetArchimedesForce()			Calculate Force applied to an actor when put in water
 	 * 	@param in						The Actor in Water
-	 *	@param WorldPlane				Plane of water in world space
+	 *	@param liquidWorldPlane			Plane of water in world space
 	 *	@return 						A Force in Newton stored in a world vector
 	 */
 	UFUNCTION(BlueprintPure, Category = "Force")

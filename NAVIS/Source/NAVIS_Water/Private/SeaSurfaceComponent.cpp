@@ -3,7 +3,7 @@
 #include "SeaSurfaceComponent.h"
 #include "Engine/CanvasRenderTarget2D.h"
 
-FRenderTargetDimension USeaSurfaceComponent::RenderTargetDimension(1024,1024);
+USeaSurfaceComponent::FRenderTargetDimension USeaSurfaceComponent::RenderTargetDimension(1024,1024);
 
 USeaSurfaceComponent::USeaSurfaceComponent() : Super()
 {
@@ -26,4 +26,5 @@ UCanvasRenderTarget2D * USeaSurfaceComponent::GetRenderTarget()
         return RenderTarget;
     
     RenderTarget = UCanvasRenderTarget2D::CreateCanvasRenderTarget2D(this, UCanvasRenderTarget2D::StaticClass(),RenderTargetDimension.X, RenderTargetDimension.Y );
+	return RenderTarget;
 }

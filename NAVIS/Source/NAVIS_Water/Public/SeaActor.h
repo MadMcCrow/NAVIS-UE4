@@ -33,7 +33,7 @@ public:
 
     /**
 	 * 	ApplyExtent()		        Change the Extent of the Water Area
-	 * 	@param extent				the new extent you want to apply
+	 * 	@param newExtent			the new extent you want to apply
      *  @note                       called when Extent is changed in blueprint, but you have to call it   
 	 */
     UFUNCTION(BlueprintSetter, BlueprintCallable)
@@ -63,22 +63,22 @@ private:
 
     /**
 	 * 	OnEnterVolume()		        Callback called when something enters this actor
-	 * 	@param OverlappedComponent	Will always be VolumeComp, as this is the component associated with this callback
-     *  @param OtherActor	        Whatever entered the water
-     *  @param OtherComp	        the specific component which entered the volume
-     *  @param OtherBodyIndex       Not used
+	 * 	@param overlappedComponent	Will always be VolumeComp, as this is the component associated with this callback
+     *  @param otherActor	        Whatever entered the water
+     *  @param otherComp	        the specific component which entered the volume
+     *  @param otherBodyIndex       Not used
      *  @param bFromSweep           Not used
-     *  @param SweepResult          Structure holding info on impact (normal, location, etc..)
+     *  @param sweepResult          Structure holding info on impact (normal, location, etc..)
 	 */
     UFUNCTION()
     virtual void OnEnterVolume( UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool bFromSweep, const FHitResult & sweepResult);
 
      /**
      * 	OnLeaveVolume()		        Callback called when something leaves this actor
-	 * 	@param OverlappedComponent	Will always be VolumeComp, as this is the component associated with this callback
-     *  @param OtherActor	        Whatever entered the water
-     *  @param OtherComp	        the specific component which entered the volume
-     *  @param OtherBodyIndex       Not used
+	 * 	@param overlappedComponent	Will always be VolumeComp, as this is the component associated with this callback
+     *  @param otherActor	        Whatever entered the water
+     *  @param otherComp	        the specific component which entered the volume
+     *  @param otherBodyIndex       Not used
 	 */
     UFUNCTION()
     virtual void OnLeaveVolume( UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex);
@@ -87,7 +87,7 @@ public:
 
      /**
      * 	Event_OnActorEnteredVolume()    Callback called when something leaves this actor
-     *  @param OtherActor	            Whatever entered the water
+     *  @param otherActor	            Whatever entered the water
      *  @note                           Blueprint Event for prototyping
      *  @todo                           Replace by actual code in  @see OnEnterVolume()
 	 */
