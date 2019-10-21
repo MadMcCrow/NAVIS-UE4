@@ -25,6 +25,16 @@ ASeaActor::ASeaActor() : Super() , Extent(FVector2D(100.f, 100.f))
     ApplyExtent(Extent);
 }
 
+ void ASeaActor::BeginPlay()
+ {
+    Super::BeginPlay();
+
+    if(VolumeComp)   // May be unecessary
+    {
+        VolumeComp->GetOverlappingActors(OverlappingActors, /*TSubclassOf<AActor> ClassFilter*/ nullptr);
+    }   
+ }
+
 void ASeaActor::ApplyExtent(const FVector2D &newExtent)
 {
     Extent = newExtent;
@@ -42,10 +52,18 @@ void ASeaActor::ApplyExtent(const FVector2D &newExtent)
 
 void ASeaActor::OnEnterVolume( UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool bFromSweep, const FHitResult & sweepResult)
 {
+    if(!OverlappingActors.Contains(otherActor)) // may be unecessary
+        OverlappingActors.AddUnique(otherActor);
+
+    // notify BP
     Event_OnActorEnteredVolume(otherActor);
 }
 
 void ASeaActor::OnLeaveVolume( UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex)
 {
+    if(OverlappingActors.Contains(otherActor)) // may be unecessary
+        OverlappingActors.Remove(otherActor);
+    
+    // notify BP
     Event_OnActorLeftVolume(otherActor);
 }

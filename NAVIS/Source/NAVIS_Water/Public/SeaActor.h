@@ -13,7 +13,7 @@ class UPostProcessComponent;
  *	@class ASeaActor 
  *  Actor representing the sea. handles visual as well as collisions 
  */
-UCLASS(Category = "WATER")
+UCLASS(Category = "WATER", hideCategories = ("Input", "Actor Tick", "Replication"))
 class NAVIS_WATER_API ASeaActor : public AActor
 {
     GENERATED_BODY()
@@ -22,6 +22,10 @@ public:
 
     /** ASeaActor   constructor  */
     ASeaActor();
+
+    //~ Begin AActor Interface.
+    virtual void BeginPlay() override;
+    //~ End AActor Interface.
 
 
 protected: 
@@ -50,7 +54,7 @@ protected:
 private:
 
 	/** SurfaceComp    Surface and root component of the actor  */
-    UPROPERTY()
+    UPROPERTY(VisibleDefaultsOnly, meta=(AllowPrivateAccess = "true"))
     USeaSurfaceComponent * SurfaceComp;
 
 	/** VolumeComp    Collison handler for this actor  */
@@ -70,7 +74,7 @@ private:
      *  @param bFromSweep           Not used
      *  @param sweepResult          Structure holding info on impact (normal, location, etc..)
 	 */
-    UFUNCTION()
+    UFUNCTION(meta=(UnsafeDuringActorConstruction="true"))
     virtual void OnEnterVolume( UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool bFromSweep, const FHitResult & sweepResult);
 
      /**
@@ -80,8 +84,12 @@ private:
      *  @param otherComp	        the specific component which entered the volume
      *  @param otherBodyIndex       Not used
 	 */
-    UFUNCTION()
+    UFUNCTION(meta=(UnsafeDuringActorConstruction="true"))
     virtual void OnLeaveVolume( UPrimitiveComponent* overlappedComponent, AActor* otherActor, UPrimitiveComponent* otherComp, int32 otherBodyIndex);
+
+    /** OverlappingActors        Array of currently overlapping actors, initialized at @see BeginPlay() and updated on @see OnEnterVolume() and OnLeaveVolume()  */
+    UPROPERTY(transient)
+    TArray<AActor *> OverlappingActors; 
 
 public:
 
