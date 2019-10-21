@@ -23,3 +23,9 @@
 
 #UE4 Engine
 */UE4
+
+
+#3D modeling files
+*/BlenderFiles
+*.blend
+*.blend*
