@@ -34,7 +34,7 @@ public:
 		}
 		return FVector(X, Y, Z);
 	}
-	
+
 	void SetNormalToUnit()
 	{
 		// doing it UE4 style ;)
@@ -48,11 +48,11 @@ public:
 			W = W/scale;
 		}
 	}
-    
+
 	FORCEINLINE FVector	GetClosestPoint(const FVector location) const
 	{
 		return FVector::PointPlaneProject(location, *this);
-	} 
+	}
 
     FORCEINLINE FVector GetLocalPosition(const FTransform &localToWorld ) const
     {
@@ -65,7 +65,7 @@ public:
     }
 
 
-	FORCEINLINE FVector GetPlaneOrigin() const 
+	FORCEINLINE FVector GetPlaneOrigin() const
 	{
 		//SetNormalToUnit(); // might not be necessary
 		return FVector( X, Y, Z ) * W; // Verify this
@@ -75,10 +75,10 @@ public:
 	FVector	GetPosition() const
 	{
 		return GetPlaneOrigin();
-	} 
+	}
 };
 
-USTRUCT() 
+USTRUCT()
 struct NAVIS_PHYSICS_API FLiquidSurface : public FNavisPlane
 {
 	GENERATED_BODY()
@@ -100,7 +100,7 @@ public:
 /**
  * Function used in various physics calculations
  */
-UCLASS(Category = "Physics|Statics") 
+UCLASS(Category = "Physics|Statics")
 class NAVIS_PHYSICS_API UNAVISPhysicsStatics : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
@@ -211,14 +211,14 @@ public:
 	static inline FLiquidSurface GetLiquidSurface(FPlane plane, float density = 1.f){return FLiquidSurface(plane, 1.f);}
 	static inline FLiquidSurface GetLiquidSurface(FNavisPlane plane, float density = 1.f){return FLiquidSurface(plane, 1.f);}
 
-	
+
 
 	/**
-	 * 	GetArchimedesForce()			Calculate Force applied to an actor when put in water
-	 * 	@param in						The Actor in Water
+	 * 	GetArchimedesForce()			Calculate Force applied to a component when put in water
+	 * 	@param in						The component in Water
 	 *	@param liquidWorldPlane			Plane of water in world space
 	 *	@return 						A Force in Newton stored in a world vector
 	 */
 	UFUNCTION(BlueprintPure, Category = "Force")
-	static FVector GetArchimedesForce(const AActor *in, const FLiquidSurface &liquidWorldPlane);
+	static FVector GetArchimedesForce(const UPrimitiveComponent *in, const FLiquidSurface &liquidWorldPlane);
 };
