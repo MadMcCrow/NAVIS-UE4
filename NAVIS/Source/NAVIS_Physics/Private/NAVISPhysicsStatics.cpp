@@ -55,13 +55,13 @@ float UNAVISPhysicsStatics::GetPrimitiveVolumeAtLevel(const UPrimitiveComponent 
 		return -1.f;
 
 	const FVector PlaneRelativePosition = in->GetComponentToWorld().InverseTransformPosition(worldPlane.GetPosition());
-	
+
 	float Volume = GetBodyInstanceVolumeAtLevel(in->BodyInstance, FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
 	if (Volume >= 0) // no error Volume != -1
-		return Volume; 
+		return Volume;
 	if(in->BodyInstance.BodySetup.Get())
 		return GetBodySetupVolumeAtLevel(in->BodyInstance.BodySetup.Get(), FNavisPlane(PlaneRelativePosition, worldPlane.GetNormal()));
-		
+
 	return -1.f;
 }
 
@@ -105,7 +105,7 @@ float UNAVISPhysicsStatics::GetBodyInstanceVolumeAtLevel(const FBodyInstance &in
 	return Volume;
 }
 
-FVector UNAVISPhysicsStatics::GetArchimedesForce(const AActor *in, const FLiquidSurface &liquidWorldPlane)
+FVector UNAVISPhysicsStatics::GetArchimedesForce(const UPrimitiveComponent *in, const FLiquidSurface &liquidWorldPlane)
 {
 	// We estimate the liquid to be uniform in density, In the real world, sea is not .
 	const FVector direction = -1 * liquidWorldPlane.GetSafeNormal();
