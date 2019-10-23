@@ -16,7 +16,7 @@ public class NAVIS_Physics : ModuleRules
         //In case you would like to add various classes that you're going to use in your game
         //you should add the core,coreuobject and engine dependencies.
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine" });
-
+        PublicDependencyModuleNames.AddRange(new string[] { "PhysX", "APEX"});
         //PublicDependencyModuleNames.AddRange(new string[] { "HeadMountedDisplay" });
         //PublicDefinitions.Add("HMD_MODULE_INCLUDED=1");
 
