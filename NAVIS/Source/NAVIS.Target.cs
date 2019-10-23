@@ -9,6 +9,6 @@ public class NAVISTarget : TargetRules
 	{
 		Type = TargetType.Game;
 
-		ExtraModuleNames.AddRange( new string[] { "NAVIS", "NAVIS_Physics", "NAVIS_Water" } );
-	}
+        ExtraModuleNames.AddRange(new string[] { "NAVIS", "NAVIS_CustomMesh", "NAVIS_Physics", "NAVIS_Water" });
+    }
 }

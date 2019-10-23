@@ -18,6 +18,11 @@
 			"Name": "NAVIS_Water",
 			"Type": "Runtime",
 			"LoadingPhase": "PostEngineInit"
+		},
+		{
+			"Name": "NAVIS_CustomMesh",
+			"Type": "Runtime",
+			"LoadingPhase": "PostEngineInit"
 		}
 	]
 }

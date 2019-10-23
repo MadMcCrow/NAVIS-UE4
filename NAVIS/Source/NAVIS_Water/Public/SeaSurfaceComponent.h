@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Components/StaticMeshComponent.h"
+#include "NAVISCustomMeshComponent.h"
 #include "SeaSurfaceComponent.generated.h"
 
 
@@ -13,7 +13,7 @@ class UCanvasRenderTarget2D;
  *  component responsible for making the water look like real water
  */
 UCLASS(minimalAPI, Category = "WATER", hideCategories = ("Variable", "Transform", "Sockets", "Physics", "Collision", "Component Replication", "Events"))
-class USeaSurfaceComponent : public UStaticMeshComponent
+class USeaSurfaceComponent : public UNAVISCustomMeshComponent
 {
     GENERATED_BODY()
 
@@ -59,4 +59,5 @@ private :
      */
     UPROPERTY()
     UCanvasRenderTarget2D * RenderTarget;
+
 };
