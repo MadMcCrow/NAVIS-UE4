@@ -10,15 +10,15 @@ class UBodySetup;
 class AActor;
 
 /**
- *  NAVIS_PHYSICS
+ *  NAVIS_PHYSICS - MinimalAPI
  *  FNavisPlane
  *	Normalized plane structure based on FPlane
  */
 USTRUCT()
-struct NAVIS_PHYSICS_API FNavisPlane : public FPlane
+struct FNavisPlane : public FPlane
 {
 	GENERATED_BODY()
-	
+
 public:
 
 	/**

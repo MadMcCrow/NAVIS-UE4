@@ -9,7 +9,8 @@
 class UCanvasRenderTarget2D;
 
 /** 
- *	@class USeaSurfaceComponent 
+ *  NAVIS_WATER - minimalAPI
+ *	USeaSurfaceComponent 
  *  component responsible for making the water look like real water
  */
 UCLASS(minimalAPI, Category = "WATER", hideCategories = ("Variable", "Transform", "Sockets", "Physics", "Collision", "Component Replication", "Events"))

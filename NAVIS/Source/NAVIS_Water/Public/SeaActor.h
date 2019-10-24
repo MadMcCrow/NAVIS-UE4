@@ -10,7 +10,8 @@ class UBoxComponent;
 class UPostProcessComponent;
 
 /** 
- *	@class ASeaActor 
+ *  NAVIS_WATER
+ *	ASeaActor 
  *  Actor representing the sea. handles visual as well as collisions 
  */
 UCLASS(Category = "WATER", hideCategories = ("Input", "Actor Tick", "Replication"))

@@ -14,8 +14,3 @@ void IFloatingObjectInterface::ApplyArchimedesForce(const FPlane &liquidPlane, f
     FVector ArchimedeForce = UNAVISPhysicsStatics::GetArchimedesForce(FloatingObject,FLiquidSurface(liquidPlane, density));
     FloatingObject->AddForce(ArchimedeForce, boneName, false);
 }
-
-UPrimitiveComponent* IFloatingObjectInterface::GetFloatingComponent() const
-{
-    return nullptr;
-}
