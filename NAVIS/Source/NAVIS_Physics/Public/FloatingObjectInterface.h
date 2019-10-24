@@ -5,7 +5,11 @@
 #include "CoreMinimal.h"
 #include "FloatingObjectInterface.generated.h"
 
-
+/**
+ *  NAVIS_PHYSICS
+ *  UFloatingObjectInterface
+ *	Interface class to add ready made functions for floating Actors (or their components) 
+ */
 UINTERFACE()
 class NAVIS_PHYSICS_API UFloatingObjectInterface : public UInterface
 {
