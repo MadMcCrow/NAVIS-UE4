@@ -3,7 +3,7 @@
 #include "FloatingObjectInterface.h"
 #include "NAVISPhysicsStatics.h"
 
-void IFloatingObjectInterface::ApplyArchimedesForce(const FPlane &liquidPlane, float density = 1.f,  FName boneName = NAME_None)
+void IFloatingObjectInterface::ApplyArchimedesForce(const FPlane &liquidPlane, float density,  FName boneName)
 {
 
     UPrimitiveComponent* FloatingObject = GetFloatingComponent();
@@ -11,7 +11,7 @@ void IFloatingObjectInterface::ApplyArchimedesForce(const FPlane &liquidPlane, f
     if(!FloatingObject)
         return;
 
-    FVector ArchimedeForce = UNAVISPhysicsStatics::GetArchimedesForce(FloatingObject,FLiquidSurface(liquidPlane, density) )
+    FVector ArchimedeForce = UNAVISPhysicsStatics::GetArchimedesForce(FloatingObject,FLiquidSurface(liquidPlane, density));
     FloatingObject->AddForce(ArchimedeForce, boneName, false);
 }
 

@@ -220,5 +220,5 @@ public:
 	 *	@return 						A Force in Newton stored in a world vector
 	 */
 	UFUNCTION(BlueprintPure, Category = "Force")
-	static FVector GetArchimedesForce(const UPrimitiveComponent *in, const FLiquidSurface &liquidWorldPlane);
+	static FVector GetArchimedesForce(const UPrimitiveComponent *solid, const FLiquidSurface &liquidWorldPlane);
 };

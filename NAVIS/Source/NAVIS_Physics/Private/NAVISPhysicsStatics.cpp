@@ -105,12 +105,11 @@ float UNAVISPhysicsStatics::GetBodyInstanceVolumeAtLevel(const FBodyInstance &in
 	return Volume;
 }
 
-FVector UNAVISPhysicsStatics::GetArchimedesForce(const UPrimitiveComponent *in, const FLiquidSurface &liquidWorldPlane)
+FVector UNAVISPhysicsStatics::GetArchimedesForce(const UPrimitiveComponent *solid, const FLiquidSurface &liquidWorldPlane)
 {
 	// We estimate the liquid to be uniform in density, In the real world, sea is not .
 	const FVector direction = -1 * liquidWorldPlane.GetSafeNormal();
 
-	const auto solid = GetActorPrimitive(in);
 	if (!solid)
 		return FVector::ZeroVector;
 	if(solid->GetBodyInstance())
@@ -120,9 +119,11 @@ FVector UNAVISPhysicsStatics::GetArchimedesForce(const UPrimitiveComponent *in, 
 		float forceN = liquidWorldPlane.GetDensity() * volume;
 		return forceN * direction;
 	}
-	if(solid->GetBodySetup())
+	// thanks TIM SWEENEY and EPIC, this is what I'm forced to do
+	UPrimitiveComponent *mutablesolid = const_cast<UPrimitiveComponent*>(solid);
+	if(mutablesolid->GetBodySetup())
 	{
-		UBodySetup * solidBodySetup = solid->GetBodySetup();
+		UBodySetup * solidBodySetup = mutablesolid->GetBodySetup();
 		const auto volume = GetBodySetupVolumeAtLevel(solidBodySetup, FNavisPlane(liquidWorldPlane.GetLocalPosition(solid->GetComponentToWorld()), liquidWorldPlane.GetLocalNormal(solid->GetComponentToWorld())));
 		float forceN = liquidWorldPlane.GetDensity() * volume;
 		return forceN * direction;
