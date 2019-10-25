@@ -205,18 +205,22 @@ FBoxSphereBounds UGeneratedMeshComponent::CalcBounds(const FTransform & LocalToW
 			return FVector (FMath::Min(A.X,B.X), FMath::Min(A.Y,B.Y), FMath::Min(A.Z,B.Z));
 			};
 
-	FVector vecMin = min(min(GeneratedMeshTris[0].V(0), GeneratedMeshTris[0].V(1)),GeneratedMeshTris[0].V(2));
-	FVector vecMax = max(max(GeneratedMeshTris[0].V(0), GeneratedMeshTris[0].V(1)),GeneratedMeshTris[0].V(2));
-	// Get maximum and minimum X, Y and Z positions of vectors
-	for (int32 TriIdx = 0; TriIdx < GeneratedMeshTris.Num(); TriIdx++)
+	if(GeneratedMeshTris.IsValidIndex(0))
 	{
-		vecMin = min(min(GeneratedMeshTris[0].V(0), GeneratedMeshTris[0].V(1)),min(GeneratedMeshTris[0].V(2),vecMin ));
-		vecMax = max(max(GeneratedMeshTris[0].V(0), GeneratedMeshTris[0].V(1)),max(GeneratedMeshTris[0].V(2),vecMax ));
+		FVector vecMin = min(min(GeneratedMeshTris[0].V(0), GeneratedMeshTris[0].V(1)),GeneratedMeshTris[0].V(2));
+		FVector vecMax = max(max(GeneratedMeshTris[0].V(0), GeneratedMeshTris[0].V(1)),GeneratedMeshTris[0].V(2));
+		// Get maximum and minimum X, Y and Z positions of vectors
+		for (int32 TriIdx = 0; TriIdx < GeneratedMeshTris.Num(); TriIdx++)
+		{
+			vecMin = min(min(GeneratedMeshTris[TriIdx].V(0), GeneratedMeshTris[TriIdx].V(1)),min(GeneratedMeshTris[TriIdx].V(2),vecMin ));
+			vecMax = max(max(GeneratedMeshTris[TriIdx].V(0), GeneratedMeshTris[TriIdx].V(1)),max(GeneratedMeshTris[TriIdx].V(2),vecMax ));
+		}
+		
+		FVector vecOrigin = ((vecMax - vecMin) / 2) + vecMin;	/* Origin = ((Max Vertex's Vector - Min Vertex's Vector) / 2 ) + Min Vertex's Vector */
+		FVector BoxPoint = vecMax - vecMin;			/* The difference between the "Maximum Vertex" and the "Minimum Vertex" is our actual Bounds Box */
+		return FBoxSphereBounds(vecOrigin, BoxPoint, BoxPoint.Size()).TransformBy(LocalToWorld);
 	}
-	
-	FVector vecOrigin = ((vecMax - vecMin) / 2) + vecMin;	/* Origin = ((Max Vertex's Vector - Min Vertex's Vector) / 2 ) + Min Vertex's Vector */
-	FVector BoxPoint = vecMax - vecMin;			/* The difference between the "Maximum Vertex" and the "Minimum Vertex" is our actual Bounds Box */
-	return FBoxSphereBounds(vecOrigin, BoxPoint, BoxPoint.Size()).TransformBy(LocalToWorld);
+	return FBoxSphereBounds();
 }
 
 
