@@ -2,12 +2,12 @@
 
 using UnrealBuildTool;
 
-public class NAVIS_Physics : ModuleRules
+public class NAVIS_Types : ModuleRules
 {
-    public NAVIS_Physics(ReadOnlyTargetRules Target) : base(Target)
+    public NAVIS_Types(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-        PrivatePCHHeaderFile = "Private/NAVIS_PhysicsPCH.h";
+        PrivatePCHHeaderFile = "Private/NAVIS_TypesPCH.h";
 
         //PrivateDependencyModuleNames.Add("NAVIS");
         //PublicDependencyModuleNames.Add("NAVIS");
@@ -16,14 +16,16 @@ public class NAVIS_Physics : ModuleRules
         //In case you would like to add various classes that you're going to use in your game
         //you should add the core,coreuobject and engine dependencies.
         PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine" });
-        PublicDependencyModuleNames.AddRange(new string[] { "PhysX"/* ,"APEX" */ });
-        PublicDependencyModuleNames.AddRange(new string[] { "NAVIS_Types"});
+        PublicDependencyModuleNames.AddRange(new string[] { "PhysX", "APEX"});
+        //PublicDependencyModuleNames.AddRange(new string[] { "HeadMountedDisplay" });
+        //PublicDefinitions.Add("HMD_MODULE_INCLUDED=1");
 
         //The path for the header files
-        PublicIncludePaths.AddRange(new string[] { "NAVIS_Physics/Public" });
+        PublicIncludePaths.AddRange(new string[] { "NAVIS_Types/Public" });
 
         //The path for the source files
-        PrivateIncludePaths.AddRange(new string[] { "NAVIS_Physics/Private" });
+        PrivateIncludePaths.AddRange(new string[] { "NAVIS_Types/Private" });
+
 
         // Uncomment if you are using online features
         //PrivateDependencyModuleNames.Add("OnlineSubsystem");

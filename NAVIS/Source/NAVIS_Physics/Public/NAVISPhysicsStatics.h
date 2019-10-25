@@ -3,140 +3,12 @@
 #pragma once
 
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "NAVISPlane.h"
 #include "NAVISPhysicsStatics.generated.h"
 
 // forward declarations
 class UBodySetup;
 class AActor;
-
-/**
- *  NAVIS_PHYSICS - MinimalAPI
- *  FNavisPlane
- *	Normalized plane structure based on FPlane
- */
-USTRUCT()
-struct FNavisPlane : public FPlane
-{
-	GENERATED_BODY()
-
-public:
-
-	/**
-	 * Constructor
-	 * @note Override all constructors to normalise after constructor
-	 */
-	FNavisPlane() :FPlane() {};
-	FORCEINLINE FNavisPlane(const FVector4& V) : FPlane(V){	SetNormalToUnit();	}
-	FORCEINLINE FNavisPlane(float InX, float InY, float InZ, float InW): FPlane(InX, InY,  InZ, InW) {	SetNormalToUnit();	}
-	FORCEINLINE FNavisPlane(FVector InNormal, float InW): FPlane( InNormal,  InW) {	SetNormalToUnit();	}
-	FORCEINLINE FNavisPlane(FVector InBase, const FVector &InNormal): FPlane( InBase,  InNormal) {	SetNormalToUnit();	}
-	FORCEINLINE FNavisPlane(FVector A, FVector B, FVector C) : FPlane( A,  B,  C) {	SetNormalToUnit();	}
-
-	/**	
-	 * GetNormal()	return normal of length 1
-	 */
-	FORCEINLINE FVector GetNormal() const
-	{
-		const float SquareSum = X*X + Y*Y + Z*Z;
-		if(SquareSum != 0.f && SquareSum != 1.f)
-		{
-			const float scale = FMath::InvSqrt(SquareSum);
-			return FVector(X* scale, Y* scale, Z*scale);
-		}
-		return FVector(X, Y, Z);
-	}
-
-	/**	
-	 * SetNormalToUnit()	make sure the normal of the plane stored is of length 1, make sure that the W parameter is affected to
-	 */
-	void SetNormalToUnit()
-	{
-		// doing it UE4 style ;)
-		const float SquareSum = X*X + Y*Y + Z*Z;
-		if (SquareSum != 0.f && SquareSum != 1.f)
-		{
-			const float scale = FMath::InvSqrt(SquareSum);
-			X = X/scale;
-			Y = Y/scale;
-			Z = Z/scale;
-			W = W/scale;
-		}
-	}
-
-	/**	
-	 * GetClosestPoint()	@return closest point to plane (in the same reference transform)
-	 */
-	FORCEINLINE FVector	GetClosestPoint(const FVector location) const
-	{
-		return FVector::PointPlaneProject(location, *this);
-	}
-
-	/**	
-	 * GetLocalPosition()	@return Plane position transformed from World To Local
-	 */
-    FORCEINLINE FVector GetLocalPosition(const FTransform &localToWorld ) const
-    {
-        return localToWorld.TransformPosition(GetPosition());
-    }
-
-	/**	
-	 * GetLocalNormal()		@return Plane normal transformed from World To Local
-	 */
-    FORCEINLINE FVector GetLocalNormal(const FTransform &localToWorld ) const
-    {
-        return localToWorld.TransformVector(GetNormal());
-    }
-
-	/**	
-	 * GetPlaneOrigin()		Get a position on the plane, the one used in making this plane
-	 */
-	FORCEINLINE FVector GetPlaneOrigin() const
-	{
-		//SetNormalToUnit(); // might not be necessary
-		return FVector( X, Y, Z ) * W; // Verify this
-	}
-
-	/**	
-	 * GetPosition()	get a position on the plane
-	 * @todo 			should be changed, as it doubles with @see GetPlaneOrigin()
-	 */
-	virtual FVector	GetPosition() const
-	{
-		return GetPlaneOrigin();
-	}
-};
-
-
-/**
- *  NAVIS_PHYSICS
- *  FLiquidSurface
- *	Normalized plane with extra liquid oriented data.
- */
-USTRUCT()
-struct NAVIS_PHYSICS_API FLiquidSurface : public FNavisPlane
-{
-	GENERATED_BODY()
-protected:
-
-	/**	
-	 * Density 		density of the liquid. Pure water has a value of 1
-	 * @note 		defaults to one via constructor
-	 */
-	UPROPERTY(BlueprintReadOnly)
-	float Density;
-
-public:
-	
-	/**	
-	 * GetDensity()	Get @see Density, via copy
-	 */
-	virtual float GetDensity() const { return Density; }
-
-	FLiquidSurface() : FNavisPlane(), Density(1.f) {} // default constructor, necessary
-	FLiquidSurface(const FNavisPlane &in, float density = 1.f) : FNavisPlane(in), Density(density){}
-	FLiquidSurface(const FPlane &in, float density = 1.f) : FNavisPlane(in), Density(density)	{}
-
-};
 
 /**
  *  NAVIS_PHYSICS
@@ -234,27 +106,6 @@ public:
 	 */
 	UFUNCTION()
 	static float GetBodyInstanceVolumeAtLevel(const FBodyInstance &in, const FNavisPlane &relativePlane);
-
-	/**
-	 * 	GetPlaneFromPointAndNormal()	get a plane from point and a non-null normal
-	 * 	@param location					position of a point on the plane
-	 * 	@param normal					normal of the plane
- 	 *	@return							Plane according to parameters
-	 */
-	UFUNCTION(BlueprintPure, Category = "Data")
-	static inline FNavisPlane GetPlaneFromPointAndNormal(FVector location, const FVector &normal){return FNavisPlane(location, normal);}
-
-	/**
-	 * 	GetLiquidSurface()				get a plane from point and a non-null normal
-	 * 	@param plane					plane to use for making that surface
-	 * 	@param density					How dense the liquid is (used for friction, forces, etc...)
- 	 *	@return							FLiquidSurface according to parameters
-	 */
-	UFUNCTION(BlueprintPure, Category = "Data")
-	static inline FLiquidSurface GetLiquidSurface(FPlane plane, float density = 1.f){return FLiquidSurface(plane, 1.f);}
-	static inline FLiquidSurface GetLiquidSurface(FNavisPlane plane, float density = 1.f){return FLiquidSurface(plane, 1.f);}
-
-
 
 	/**
 	 * 	GetArchimedesForce()			Calculate Force applied to a component when put in water

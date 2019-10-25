@@ -10,6 +10,11 @@
 			"LoadingPhase": "Default"
 		},
 		{
+			"Name": "NAVIS_Types",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
 			"Name": "NAVIS_Physics",
 			"Type": "Runtime",
 			"LoadingPhase": "PostEngineInit"

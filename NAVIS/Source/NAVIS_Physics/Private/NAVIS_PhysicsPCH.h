@@ -7,3 +7,4 @@
 #include "Engine/Public/PhysicsPublic.h"
 #include "Components/PrimitiveComponent.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "NAVISPlane.h"
