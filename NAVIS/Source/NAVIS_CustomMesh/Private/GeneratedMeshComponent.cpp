@@ -141,9 +141,12 @@ FPrimitiveSceneProxy* UGeneratedMeshComponent::CreateSceneProxy()
 			Mesh.bWireframe = bWireframe;
 			Mesh.VertexFactory = &VertexFactory;
 			Mesh.MaterialRenderProxy = MaterialProxy;
-			// @todo might try to put DrawVelocity to true
+			// 4.23 @todo might try to put DrawVelocity to true
+#if ENGINE_MINOR_VERSION < 23
+			BatchElement.PrimitiveUniformBuffer = CreatePrimitiveUniformBufferImmediate(GetLocalToWorld(), GetBounds(), GetLocalBounds(), true, false);
+#else
 			BatchElement.PrimitiveUniformBuffer = CreatePrimitiveUniformBufferImmediate(GetLocalToWorld(), GetBounds(), GetLocalBounds(), GetLocalBounds(), true, false);
-
+#endif
 			BatchElement.FirstIndex = 0;
 			BatchElement.NumPrimitives = IndexBuffer.Indices.Num() / 3;
 			BatchElement.MinVertexIndex = 0;
